@@ -67,7 +67,6 @@ LCD_Setup:
 	
 LCD_Frame:
 		
-; ******* Main programme ****************************************
 ;start: 	
 ;	lfsr	0, Line1Array		; Load FSR0 with address in RAM	
 ;	movlw	low highword(Line1)	; address of data in PM
@@ -76,15 +75,15 @@ LCD_Frame:
 ;	movwf	TBLPTRH, A		; load high byte to TBLPTRH
 ;	movlw	low(Line1)		; address of data in PM
 ;	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-;	movlw	myTable_lLine1		; bytes to read
+;	movlw	   Line1		; bytes to read
 ;	movwf 	counter, A		; our counter register
 ;loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 ;	movff	TABLAT, POSTINC0	; move data from TABLAT to (FSR0), inc FSR0	
 ;	decfsz	counter, A		; count down to zero
 ;	bra	loop			; keep going until finished
 
-;	movlw	myTable_l		; output message to LCD
-;	addlw	0xff			; don't send the final carriage return to LCD
+;	movlw	Line1Array		; output message to LCD
+;	addlw	0xff			; don't send the final carriage return to LCD by (minusing 1)
 ;	lfsr	2, myArray
 ;	call	LCD_Write_Message
     
