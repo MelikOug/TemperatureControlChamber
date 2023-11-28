@@ -1,7 +1,22 @@
 #include <xc.inc>
 
-global  LCD_Setup, LCD_Process, LCD_tmp, msg
+global  LCD_Setup, LCD_Update, LCD_tmp, msg
 
+    
+psect	udata_bank	;reserve data in RAM
+Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
+Line2Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
+
+psect	data	
+Line1:
+	db	'T','a','r','g','e','t',':',0x0a ;message (in PR), plus carriage return that moves cursor to the end
+	LenLine1   EQU	7	; length of data
+	align	2				
+Line2:
+	db	'C','u','r','r','e','n','t',':'  ;message (in PR)			
+	LenLine2   EQU	8	; length of data
+	align	2
+					
 psect	udata_acs   ; named variables in access ram
 LCD_cnt_l:	ds 1   ; reserve 1 byte for variable LCD_cnt_l
 LCD_cnt_h:	ds 1   ; reserve 1 byte for variable LCD_cnt_h
@@ -9,11 +24,12 @@ LCD_cnt_ms:	ds 1   ; reserve 1 byte for ms counter
 LCD_tmp:	ds 1   ; reserve 1 byte for temporary use
 LCD_counter:	ds 1   ; reserve 1 byte for counting through nessage
 
-	LCD_E	EQU 5	; LCD enable bit
-    	LCD_RS	EQU 4	; LCD register select bit
-
+	
+	
 psect	lcd_code,class=CODE
-    
+LCD_E	EQU 5	; LCD enable bit
+LCD_RS	EQU 4	; LCD register select bit
+	
 LCD_Setup:
 	clrf    LATB, A
 	movlw   11000000B	    ; RB0:5 all outputs
@@ -44,37 +60,72 @@ LCD_Setup:
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
+	
+	call	LCD_Frame
 	return
 
-LCD_Process:
-Test_C:
-	movlw	0x43
-	cpfseq	msg, A	;is msg = 'C' -> call clear subroutine
-	bra Test_E
-	bra	LCD_Clear
-Test_E:
-	movlw	0x45
-	cpfseq	msg, A	;is msg = 'E' -> call enter subroutine
-	bra	LCD_Send_Byte_D
-	bra	LCD_Enter
 	
-	; Message stored at FSR2, length stored in W
+LCD_Frame:
+		
+; ******* Main programme ****************************************
+;start: 	
+;	lfsr	0, Line1Array		; Load FSR0 with address in RAM	
+;	movlw	low highword(Line1)	; address of data in PM
+;	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+;	movlw	high(Line1)		; address of data in PM
+;	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+;	movlw	low(Line1)		; address of data in PM
+;	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+;	movlw	myTable_lLine1		; bytes to read
+;	movwf 	counter, A		; our counter register
+;loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
+;	movff	TABLAT, POSTINC0	; move data from TABLAT to (FSR0), inc FSR0	
+;	decfsz	counter, A		; count down to zero
+;	bra	loop			; keep going until finished
+
+;	movlw	myTable_l		; output message to LCD
+;	addlw	0xff			; don't send the final carriage return to LCD
+;	lfsr	2, myArray
+;	call	LCD_Write_Message
+    
+	;Message stored at FSR2, length stored in W
 	;movwf   LCD_counter, A
 ;LCD_Loop_message:
 	;movf    POSTINC2, W, A
 	;call    LCD_Send_Byte_D
 	;decfsz  LCD_counter, A
-	;bra	LCD_Loop_message
-	return
+	;bra	 LCD_Loop_message
+	
+	movlw   0xC0
+	call    LCD_Send_Byte_I	;changes LCD Output to 2nd line
+	
+	
+LCD_Update:
+	    
+Test_C:
+	movlw	0x43
+	cpfseq	msg, A	;is msg = 'C' -> call clear subroutine
+	bra Test_E	
+	bra	LCD_Clear
+Test_E:
+	movlw	0x45
+	cpfseq	msg, A	;is msg = 'E' -> call enter subroutine
+	bra	LCD_Send_Byte_I
+	bra	LCD_Enter
+	
 LCD_Clear:
-    call LCD_Setup	;Temporary clear for now
-    return
+	movlw   0x01    ;sends 01 as instruction (this clears LCD)
+	call    LCD_Send_Byte_I
+	return  ;returns to main.s
     
 LCD_Enter:
+    ;Send system message to change temp to target temp
     return
     
+    
+    
+    
 LCD_Send_Byte_I:	    ; Transmits byte stored in W to instruction reg
-	;movlw	0x40
 	movwf   LCD_tmp, A
 	swapf   LCD_tmp, W, A   ; swap nibbles, high nibble goes first
 	andlw   0x0F	    ; select just low nibble
@@ -88,7 +139,7 @@ LCD_Send_Byte_I:	    ; Transmits byte stored in W to instruction reg
         call    LCD_Enable  ; Pulse enable Bit 
 	return
 
-LCD_Send_Byte_D:	 
+LCD_Send_Byte_D:
 	movf	msg, W, A; Transmits byte stored in msg to data reg
 	movwf   LCD_tmp, A
 	swapf   LCD_tmp, W, A	; swap nibbles, high nibble goes first
