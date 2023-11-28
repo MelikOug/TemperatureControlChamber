@@ -75,25 +75,26 @@ LCD_Frame:
 ;	movwf	TBLPTRH, A		; load high byte to TBLPTRH
 ;	movlw	low(Line1)		; address of data in PM
 ;	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-;	movlw	   Line1		; bytes to read
+;	movlw	LenLine1		; bytes to read
 ;	movwf 	counter, A		; our counter register
 ;loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 ;	movff	TABLAT, POSTINC0	; move data from TABLAT to (FSR0), inc FSR0	
 ;	decfsz	counter, A		; count down to zero
 ;	bra	loop			; keep going until finished
-
 ;	movlw	Line1Array		; output message to LCD
 ;	addlw	0xff			; don't send the final carriage return to LCD by (minusing 1)
-;	lfsr	2, myArray
+;	lfsr	2, Line1Array
 ;	call	LCD_Write_Message
     
-	;Message stored at FSR2, length stored in W
+;LCD_Write_Message:	    ; Message stored at FSR2, length stored in W
 	;movwf   LCD_counter, A
 ;LCD_Loop_message:
 	;movf    POSTINC2, W, A
 	;call    LCD_Send_Byte_D
 	;decfsz  LCD_counter, A
-	;bra	 LCD_Loop_message
+	;bra	LCD_Loop_message
+	;return
+
 	
 	movlw   0xC0
 	call    LCD_Send_Byte_I	;changes LCD Output to 2nd line
