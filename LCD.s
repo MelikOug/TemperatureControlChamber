@@ -1,6 +1,6 @@
 #include <xc.inc>
 
-global  LCD_Setup, LCD_Update, LCD_tmp, msg
+global  LCD_Setup, LCD_Update, LCD_tmp, msg, LCD_counter, LenLine1, LenLine2
 
     
 psect	udata_bank	;reserve data in RAM
@@ -62,7 +62,6 @@ LCD_Setup:
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
-	
 	call	LCD_Frame
 	return
 
@@ -86,20 +85,23 @@ loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	movlw	Line1Array		; output message to LCD
 	addlw	0xff			; don't send the final carriage return to LCD by (minusing 1)
 	lfsr	2, Line1Array
+	movlw	LenLine1    ; in PM
 	call	LCD_Write_Message
+	return
     
-LCD_Write_Message:	    ; Message stored at FSR2, length stored in W
-	movff	LenLine1, LCD_counter, A
+LCD_Write_Message:	    
+	
+	movwf	LCD_counter, A
 LCD_Loop_message:
-	movf    POSTINC2, W, A
+	movf    POSTINC2, W, A  ; Message stored at FSR2, length stored in W
 	call    LCD_Send_Byte_D
 	decfsz  LCD_counter, A
 	bra	LCD_Loop_message
 	return
 
 	
-	movlw   0xC0
-	call    LCD_Send_Byte_I	;changes LCD Output to 2nd line
+	;movlw   0xC0
+	;call    LCD_Send_Byte_I	;changes LCD Output to 2nd line
 	
 	
 	
@@ -113,7 +115,7 @@ Test_C:
 Test_E:
 	movlw	0x45
 	cpfseq	msg, A	;is msg = 'E' -> call enter subroutine
-	bra	LCD_Send_Byte_I
+	bra	Update
 	bra	LCD_Enter
 	
 LCD_Clear:
@@ -122,8 +124,15 @@ LCD_Clear:
 	return  ;returns to main.s
     
 LCD_Enter:
-    ;Send system message to change temp to target temp
-    return
+	;Send system message to change temp to target temp
+	return
+
+Update:
+	movlw	00000110B	; entry mode incr by 1 no shift
+	call	LCD_Send_Byte_I
+	movf	msg, W, A; Transmits byte stored in msg to data reg
+	call	LCD_Send_Byte_D
+	return
     
     
     
@@ -143,7 +152,6 @@ LCD_Send_Byte_I:	    ; Transmits byte stored in W to instruction reg
 	return
 
 LCD_Send_Byte_D:
-	;movf	msg, W, A; Transmits byte stored in msg to data reg
 	movwf   LCD_tmp, A
 	swapf   LCD_tmp, W, A	; swap nibbles, high nibble goes first
 
