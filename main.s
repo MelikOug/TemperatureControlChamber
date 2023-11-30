@@ -10,6 +10,7 @@ counter:    ds 1    ; reserve one byte for a counter variable
 delay_count:ds 1    ; reserve one byte for counter in the delay routine
 
 
+
  
 psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
 myArray:    ds 0x80 ; reserve 128 bytes for message data
@@ -26,7 +27,8 @@ rst: 	org 0x0
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
 	call	UART_Setup
-	call	LCD_Setup	; setup UART
+	call	LCD_Setup	; setup LCD
+	
 	call	KEY_Setup	; setup KeyPad
 	goto	start
 	
