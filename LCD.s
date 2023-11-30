@@ -89,7 +89,7 @@ loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	call	LCD_Write_Message
     
 LCD_Write_Message:	    ; Message stored at FSR2, length stored in W
-	movwf   LCD_counter, A
+	movff	LenLine1, LCD_counter, A
 LCD_Loop_message:
 	movf    POSTINC2, W, A
 	call    LCD_Send_Byte_D
@@ -100,6 +100,7 @@ LCD_Loop_message:
 	
 	movlw   0xC0
 	call    LCD_Send_Byte_I	;changes LCD Output to 2nd line
+	
 	
 	
 LCD_Update:
@@ -142,7 +143,7 @@ LCD_Send_Byte_I:	    ; Transmits byte stored in W to instruction reg
 	return
 
 LCD_Send_Byte_D:
-	movf	msg, W, A; Transmits byte stored in msg to data reg
+	;movf	msg, W, A; Transmits byte stored in msg to data reg
 	movwf   LCD_tmp, A
 	swapf   LCD_tmp, W, A	; swap nibbles, high nibble goes first
 
