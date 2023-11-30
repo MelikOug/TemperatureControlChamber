@@ -62,6 +62,8 @@ LCD_Setup:
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
+	
+	lfsr	1, LenLine2
 	call	LCD_Frame
 	return
 
@@ -69,8 +71,9 @@ LCD_Setup:
 LCD_Frame:
 		
 ;Current Line2    
-
-lfsr	0, Line2Array			; Load FSR0 with address in RAM	
+	
+	
+	lfsr	0, Line2Array			; Load FSR0 with address in RAM	
 	movlw	low highword(Line2)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
 	movlw	high(Line2)		; address of data in PM
@@ -86,40 +89,49 @@ loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	lfsr	2, Line2Array
 	movlw	LenLine2		; in PM
 	call	LCD_Write_Message
+
+;Current Line1    
+
+lfsr	0, Line1Array			; Load FSR0 with address in RAM	
+	movlw	low highword(Line1)	; address of data in PM
+	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+	movlw	high(Line1)		; address of data in PM
+	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+	movlw	low(Line1)		; address of data in PM
+	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+	movlw	LenLine1		; bytes to read
+	movwf 	counter, A		; our counter register
+loop2: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
+	movff	TABLAT, POSTINC0	; move data from TABLAT to (FSR0), inc FSR0	
+	decfsz	counter, A		; count down to zero
+	bra	loop2			; keep going until finished
+	lfsr	2, Line1Array
+	movlw	LenLine1		; in PM
+	call	LCD_Write_Message
 	return
 	
-    
-
-;start: 	
-;	lfsr	0, Line1Array		; Load FSR0 with address in RAM	
-;	movlw	low highword(Line1)	; address of data in PM
-;	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-;	movlw	high(Line1)		; address of data in PM
-;	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-;	movlw	low(Line1)		; address of data in PM
-;	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-;	movlw	LenLine1		; bytes to read
-;	movwf 	counter, A		; our counter register
-;loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
-;	movff	TABLAT, POSTINC0	; move data from TABLAT to (FSR0), inc FSR0	
-;	decfsz	counter, A		; count down to zero
-;	bra	loop			; keep going until finished
-;	movlw	Line1Array		; output message to LCD
-;	addlw	0xff			; don't send the final carriage return to LCD by (minusing 1)
-;	lfsr	2, Line1Array
-;	movlw	LenLine1    ; in PM
-;	call	LCD_Write_Message
 	
-;	return
-    
 LCD_Write_Message:	    
+	cpfseq	FSR1	
+	bra	LDC_Set_Line1
+	bra	LDC_Set_Line2
 	
-LDC_Switch_Line:
+LDC_Set_Line1:
 	movwf	LCD_counter, A
-	movlw	0xC0
+	movlw	10000000B
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
+	bra	LCD_Loop_message
+	
+LDC_Set_Line2:
+	movwf	LCD_counter, A
+	movlw	11000000B
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	bra	LCD_Loop_message
+	
 	
 LCD_Loop_message:
 	movf    POSTINC2, W, A  ; Message stored at FSR2, length stored in W
