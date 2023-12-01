@@ -49,7 +49,9 @@ I2C_Set_Sensor_On:
     call    check_int
     return
     
-I2C_Read_Pixel:
+I2C_Read_Pixel: 
+    ;Grid-EYE_AMG88X_I2C communication (p20)
+    ;(p317)
     bsf	    SSP1CON2, 0	    ;Generate start (SEN) condition
     call    check_int
     movlw   110100010B	    ;MS7Bits = slave address, LSB = 0 = Write
