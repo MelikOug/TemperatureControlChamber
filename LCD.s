@@ -13,8 +13,9 @@ Line1:
 	LenLine1   EQU	7	; length of data
 	align	2				
 Line2:
-	db	'C','u','r','r','e','n','t',':'  ;message (in PR)			
-	LenLine2   EQU	8	; length of data
+	db	'C','u','r','r','e','n','t',':'  ;message (in PR)	
+	db	'N','/','A'
+	LenLine2   EQU	11	; length of data
 	align	2
 					
 psect	udata_acs   ; named variables in access ram
@@ -71,8 +72,6 @@ LCD_Setup:
 LCD_Frame:
 		
 ;Current Line2    
-	
-	
 	lfsr	0, Line2Array			; Load FSR0 with address in RAM	
 	movlw	low highword(Line2)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
@@ -91,7 +90,6 @@ loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	call	LCD_Write_Message
 
 ;Current Line1    
-
 lfsr	0, Line1Array			; Load FSR0 with address in RAM	
 	movlw	low highword(Line1)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
@@ -170,6 +168,7 @@ LCD_Clear:
 	return  ;returns to main.s
     
 LCD_Enter:
+	;Read number after target
 	;Send system message to change temp to target temp
 	return
 
