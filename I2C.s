@@ -13,24 +13,24 @@ I2C_Setup:
 Mode_Config:
     movlw 00101000B ; setup value
     ; into W register
-    banksel SSPCON1 ; select SFR
+    banksel SSP1CON1 ; select SFR
     ; bank
-    movwf SSPCON1 ; configure for
+    movwf SSP1CON1 ; configure for
     ; Master I2C
     
 Bit_Rate_Setup:
     movlw 00001001B ; setup value
     ; into W register
-    banksel SSPADD ; select SFR bank
-    movwf SSPADD ; baud rate =
+    banksel SSP1ADD ; select SFR bank
+    movwf SSP1ADD ; baud rate =
     ; 400KHz @ 16MHz
     
 Slew_Rate_Control:
     movlw 00000000B ; setup value
     ; into W register
-    movwf SSPSTAT ; slew rate
+    movwf SSP1STAT ; slew rate
     ; enabled
-    banksel SSPSTAT ; select SFR bank
+    banksel SSP1STAT ; select SFR bank
  
 Pin_Setup:
     movlw 00011000B ; setup value
@@ -40,34 +40,34 @@ Pin_Setup:
     ; are inputs
    
 Ack_Event:
-    banksel SSPCON2 ; select SFR
+    banksel SSP1CON2 ; select SFR
     ; bank
-    bcf SSPCON2, ACKDT ; set ack bit
+    bcf SSP1CON2, 5 ; set (ACKDT) bit
     ; state to 0
-    bsf SSPCON2, ACKEN ; initiate ack
+    bsf SSP1CON2, 4 ; initiate ack (ACKEN)
  
 Not_Ack_Event:
-    banksel SSPCON2 ; select SFR
+    banksel SSP1CON2 ; select SFR
     ; bank
-    bsf SSPCON2, ACKDT ; set ack bit
+    bsf SSP1CON2, 5 ; set ack bit
     ; state to 1
-    bsf SSPCON2, ACKEN ; initiate ack
+    bsf SSP1CON2, 4 ; initiate ack
 
 Idle_Check:
     ;i2c_idle ; routine name
-    banksel SSPSTAT ; select SFR
+    banksel SSP1STAT ; select SFR
     ; bank
-    btfsc SSPSTAT,R_W ; transmit
+    btfsc SSP1STAT,2 ; transmit (R/W)
     ; in progress?
     goto $-1 ; module busy
     ; so wait
-    banksel SSPCON2 ; select SFR
+    banksel SSP1CON2 ; select SFR
     ; bank
-    movf SSPCON2,w ; get copy
+    movf SSP1CON2,w ; get copy
     ; of SSPCON2
     andlw 0x1F ; mask out
     ; non-status
-    btfss STATUS,Z ; test for
+    btfss STATUS,0 ; test for
     ; zero state
     goto $-3 ; bus is busy
     ; test again
