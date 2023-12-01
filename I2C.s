@@ -2,7 +2,7 @@
     
 ;Holds all the code required for communication with sensor
 
-global I2C_Setup, I2C_Write_Test
+global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel
     
 psect	I2C_code,class=CODE
     
@@ -46,6 +46,33 @@ I2C_Set_Sensor_On:
     call    check_int
     return
     
+I2C_Read_Pixel:
+    bsf	    SSP1CON2, 0	    ;Generate start (SEN) condition
+    call    check_int
+    movlw   110100010B	    ;MS7Bits = slave address, LSB = 0 = Write
+    movwf   SSP1BUF
+    call    check_AckR
+    call    check_int
+    
+    movlw   0x80	    ;Pixel 1 register address
+    movwf   SSP1BUF
+    call    check_AckR
+    call    check_int
+    
+    bsf     SSP1CON2, 2	    ;Generate  Repeated Start (RSEN) condition
+    call    check_int
+    movlw   110100011B	    ;MS7Bits = slave address, LSB = 1 = Read
+    movwf   SSP1BUF
+    call    check_AckR
+    call    check_int
+    
+    bsf	    SSP1CON2, 3	    ;Reception mode enabled
+    
+    
+    
+    
+    
+    
 check_int:
     btfss PIR1, 3    ;is start condition finished setting up
     bra check_int
@@ -57,15 +84,3 @@ check_AckR:
     bra check_AckR
     return
     
-
-
-    
-Ack_Event:
-    bcf SSP1CON2, 5 ; set (ACKDT) bit  to 0
-    bsf SSP1CON2, 4 ; set (ACKEN) bit to 1
-    return
-    
-NAck_Event:
-    bsf SSP1CON2, 5 ; set (ACKDT) bit to 1
-    bsf SSP1CON2, 4 ; set (ACKEN) bit to 0
-    return
