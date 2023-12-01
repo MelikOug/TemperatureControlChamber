@@ -1,8 +1,13 @@
+#include <xc.inc>
+    
 ;Holds all the code required for communication with sensor
 
 global I2C_Setup
+    
+psect	I2C_code,class=CODE
+    
 I2C_Setup:    
-
+    return
 Mode_Config:
     movlw 00101000B ; setup value
     ; into W register
@@ -26,7 +31,7 @@ Slew_Rate_Control:
     banksel SSPSTAT ; select SFR bank
  
 Pin_Setup:
-    movlw b?00011000? ; setup value
+    movlw 00011000B ; setup value
     ; into W register
     banksel TRISC ; select SFR bank
     iorwf TRISC,f ; SCL and SDA
