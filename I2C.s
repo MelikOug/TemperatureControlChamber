@@ -8,6 +8,8 @@ psect	I2C_code,class=CODE
     
 I2C_Setup:    
     return
+    
+    
 Mode_Config:
     movlw 00101000B ; setup value
     ; into W register
