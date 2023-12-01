@@ -3,7 +3,7 @@
 extrn	KEY_Setup, KEY_Read_Message  ; external subroutines
 extrn	LCD_Setup, LCD_Update
 extrn	UART_Setup, UART_Transmit_Message
-extrn	I2C_Setup
+extrn	I2C_Setup, I2C_Write_Test
     
 global delay
 	
@@ -28,8 +28,9 @@ rst: 	org 0x0
 	; ******* Programme FLASH read Setup Code ***********************
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
-	call	UART_Setup
+	;call	UART_Setup
 	call	I2C_Setup
+	call	I2C_Write_Test
 	call	LCD_Setup	; setup LCD
 	
 	call	KEY_Setup	; setup KeyPad
@@ -38,14 +39,14 @@ setup:	bcf	CFGS	; point to Flash program memory
 start:
 	call	KEY_Read_Message
 	call	delay
-	call	UART_Transmit_Message
+	;call	UART_Transmit_Message
 	call	LCD_Update
 	bra	start
 	
 delay:
 	movlw   0x0F
 	movwf   delay_count, A
-	decfsz  delay_count
+	decfsz  delay_count, A
 	bra	delay
 	return  
     
