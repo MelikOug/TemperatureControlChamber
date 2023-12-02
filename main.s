@@ -3,7 +3,7 @@
 extrn	KEY_Setup, KEY_Read_Message  ; external subroutines
 extrn	LCD_Setup, LCD_Update
 extrn	UART_Setup, UART_Transmit_Message
-extrn	I2C_Setup, I2C_Write_Test
+extrn	I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel
     
 global delay
 	
@@ -30,7 +30,7 @@ setup:	bcf	CFGS	; point to Flash program memory
 	bsf	EEPGD 	; access Flash program memory
 	;call	UART_Setup
 	call	I2C_Setup
-	call	I2C_Write_Test
+	call	I2C_Set_Sensor_On
 	call	LCD_Setup	; setup LCD
 	
 	call	KEY_Setup	; setup KeyPad
