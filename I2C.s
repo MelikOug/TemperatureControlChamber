@@ -2,10 +2,15 @@
     
 ;Holds all the code required for communication with sensor
 
-global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel
+global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel, I2C_Data
     
-psect	udata_acs	;reserve data in acess RAM 
-I2D_Data: ds 1
+    
+psect	udata_acs	;reserve data in access RAM 
+I2C_Data: ds 1
+count:	  ds 1
+    
+psect	udata_bank3	;reserve data in RAM bank 3 (doesnt affect other vars)
+Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
     
 psect	I2C_code,class=CODE
     
@@ -55,25 +60,26 @@ I2C_Read_Pixel:
     bsf	    SSP1CON2, 0	    ;Generate start (SEN) condition
     call    check_int
     movlw   110100010B	    ;MS7Bits = slave address, LSB = 0 = Write
-    movwf   SSP1BUF
-    call    check_AckR
-    call    check_int
-    
+    call    load_buff
     movlw   0x80	    ;Pixel 1 register address
-    movwf   SSP1BUF
-    call    check_AckR
-    call    check_int
-    
+    call    load_buff
     bsf     SSP1CON2, 1	    ;Generate  Repeated Start (RSEN) condition
     call    check_int
     movlw   110100011B	    ;MS7Bits = slave address, LSB = 1 = Read
-    movwf   SSP1BUF
-    call    check_AckR
-    call    check_int
+    call    load_buff
     
+    movlw   128
+    movwf   count, A
     bsf	    SSP1CON2, 3	    ;Reception mode (RCEN) enabled
     call    check_int
+Read_Loop:
     movff   SSP1BUF, I2C_Data, A    ;Moves received data to var
+    bcf	    SSP1CON2, 5     ;Clears ACKDT Bit
+    bsf	    SSP1CON2, 4	    ;Sets ACKEN bit to transmit ACKDT to slave
+    call    check_int
+    decfsz  count, A
+    bra	    Read_Loop
+    
     bsf	    SSP1CON2, 5     ;Sets ACKDT Bit (NACK) (NACK only for final)
     bsf	    SSP1CON2, 4	    ;Sets ACKEN bit to transmit ACKDT to slave
     call    check_int
@@ -83,7 +89,10 @@ I2C_Read_Pixel:
     return
     
     
-    
+load_buff:
+    movwf   SSP1BUF
+    call    check_AckR
+    call    check_int
     
 check_int:
     btfss PIR1, 3    ;is start condition finished setting up
@@ -95,8 +104,4 @@ check_AckR:
     btfsc SSP1CON2, 6; check if ack was received by slave (0 if received)
     bra check_AckR
     return
-    
-check_AckS:
-    btfsc SSP1CON2, 6; check if ack was received by slave (0 if received)
-    bra check_AckR
-    return
+   
