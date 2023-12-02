@@ -10,7 +10,7 @@ I2C_Data: ds 1
 count:	  ds 1
     
 psect	udata_bank3	;reserve data in RAM bank 3 (doesnt affect other vars)
-Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
+Pixel_Data:	ds 0x80 ;reserve 128 bytes for temperature data from pixels
     
 psect	I2C_code,class=CODE
     
@@ -34,22 +34,17 @@ I2C_Set_Sensor_On:
     ;21.4.6.1 I2C? Master Mode Operation (p312)
     
     bsf	    SSP1CON2, 0	    ;Generate start condition
-    ;SSPxIF is set (bsf PIR1, 3 )
-    ;The MSSP module will wait the required start time
-    ;before any other operation takes place
-    call    check_int
+    ;SSPxIF is set (bsf PIR1, 3 ) when done
+    call    check_int	    ;check to see if done
     movlw   110100010B	    ;MS7Bits = slave address, LSB = 0 = Write
-    movwf   SSP1BUF
-    call    check_AckR
-    call    check_int
+    call    load_buff	    ;Send to into buffer which shifts out to slave
+    	    
     movlw   0x00	    ;Power control register address
-    movwf   SSP1BUF
-    call    check_AckR
-    call    check_int
-    movlw   0x00	    ;Set sensor to normal mode
-    movwf   SSP1BUF
-    call    check_AckR
-    call    check_int
+    call    load_buff
+    
+    movlw   0x00	    ;Set sensor to normal mode instruction
+    call    load_buff
+    
     bsf	    SSP1CON2, 2	    ;Generate stop condition
     call    check_int
     return
@@ -57,14 +52,19 @@ I2C_Set_Sensor_On:
 I2C_Read_Pixel: 
     ;Grid-EYE_AMG88X_I2C communication (p20)
     ;(p317)
+    lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
     bsf	    SSP1CON2, 0	    ;Generate start (SEN) condition
     call    check_int
+    
     movlw   110100010B	    ;MS7Bits = slave address, LSB = 0 = Write
     call    load_buff
+    
     movlw   0x80	    ;Pixel 1 register address
     call    load_buff
+    
     bsf     SSP1CON2, 1	    ;Generate  Repeated Start (RSEN) condition
     call    check_int
+    
     movlw   110100011B	    ;MS7Bits = slave address, LSB = 1 = Read
     call    load_buff
     
@@ -73,7 +73,7 @@ I2C_Read_Pixel:
     bsf	    SSP1CON2, 3	    ;Reception mode (RCEN) enabled
     call    check_int
 Read_Loop:
-    movff   SSP1BUF, I2C_Data, A    ;Moves received data to var
+    movff   SSP1BUF, POSTINC0 ;Moves received data to wherever FSR0 points to in bank3, inc fsr0
     bcf	    SSP1CON2, 5     ;Clears ACKDT Bit
     bsf	    SSP1CON2, 4	    ;Sets ACKEN bit to transmit ACKDT to slave
     call    check_int
@@ -87,6 +87,9 @@ Read_Loop:
     bsf	    SSP1CON2, 2	    ;Generate stop condition
     call    check_int
     return
+    
+    
+    
     
     
 load_buff:
