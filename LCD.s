@@ -72,7 +72,7 @@ LCD_Setup:
 LCD_Frame:
 		
 ;Current Line2    
-	lfsr	0, Line2Array			; Load FSR0 with address in RAM	
+	lfsr	0, Line2Array		; Load FSR0 with address in bank 2	
 	movlw	low highword(Line2)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
 	movlw	high(Line2)		; address of data in PM
@@ -82,7 +82,7 @@ LCD_Frame:
 	movlw	LenLine2		; bytes to read
 	movwf 	counter, A		; our counter register
 loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
-	movff	TABLAT, POSTINC0	; move data from TABLAT to (FSR0), inc FSR0	
+	movff	TABLAT, POSTINC0	; move data from TABLAT to (where FSR0 points), inc FSR0	
 	decfsz	counter, A		; count down to zero
 	bra	loop			; keep going until finished
 	lfsr	2, Line2Array
@@ -132,8 +132,7 @@ LDC_Set_Line2:
 	
 	
 LCD_Loop_message:
-	movf    POSTINC2, W, A  ; Message stored at FSR2, length stored in W
-	call    LCD_Send_Byte_D
+	movf    POSTINC2, W, A  ; Move value stored at FSR2 address to WR, Inc address
 	decfsz  LCD_counter, A
 	bra	LCD_Loop_message
 	return
