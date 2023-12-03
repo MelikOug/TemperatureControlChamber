@@ -85,8 +85,8 @@ loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	movff	TABLAT, POSTINC0	; move data from TABLAT to (where FSR0 points), inc FSR0	
 	decfsz	counter, A		; count down to zero
 	bra	loop			; keep going until finished
-	lfsr	2, Line2Array
-	movlw	LenLine2		; in PM
+	lfsr	2, Line2Array		; Moves address of Line2Array in FSR2
+	movlw	LenLine2		; Moves address LenLine2 (11) into WR
 	call	LCD_Write_Message
 
 ;Current Line1    
@@ -104,13 +104,13 @@ loop2: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	decfsz	counter, A		; count down to zero
 	bra	loop2			; keep going until finished
 	lfsr	2, Line1Array
-	movlw	LenLine1		; in PM
+	movlw	LenLine1		; Moves address of LenLine1 to WR 
 	call	LCD_Write_Message
 	return
 	
 	
 LCD_Write_Message:	    
-	cpfseq	FSR1	
+	cpfseq	FSR1			;compares WR to address in FSR1 (11)
 	bra	LDC_Set_Line1
 	bra	LDC_Set_Line2
 	
@@ -167,7 +167,7 @@ LCD_Clear:
 	return  ;returns to main.s
     
 LCD_Enter:
-	;Read number after target
+	;Read number after "target:"
 	;Send system message to change temp to target temp
 	return
 
