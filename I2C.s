@@ -2,7 +2,7 @@
     
 ;Holds all the code required for communication with sensor
 
-global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel, I2C_Data
+global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel, Pixel_Data
     
     
 psect	udata_acs	;reserve data in access RAM 
