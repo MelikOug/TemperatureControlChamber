@@ -3,7 +3,7 @@
 extrn	KEY_Setup, KEY_Read_Message  ; external subroutines
 extrn	LCD_Setup, LCD_Update
 extrn	UART_Setup, UART_Transmit_Message
-extrn	I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel
+extrn	I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels
     
 global delay
 	
@@ -39,7 +39,7 @@ setup:	bcf	CFGS	; point to Flash program memory
 start:
 	call	KEY_Read_Message
 	;call	delay
-	call	I2C_Read_Pixel
+	call	I2C_Read_Pixels
 	call	UART_Transmit_Message
 	call	LCD_Update
 	bra	start
