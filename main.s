@@ -28,7 +28,7 @@ rst: 	org 0x0
 	; ******* Programme FLASH read Setup Code ***********************
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
-	;call	UART_Setup
+	call	UART_Setup
 	call	I2C_Setup
 	call	I2C_Set_Sensor_On
 	call	LCD_Setup	; setup LCD
@@ -38,8 +38,9 @@ setup:	bcf	CFGS	; point to Flash program memory
 	
 start:
 	call	KEY_Read_Message
-	call	delay
-	;call	UART_Transmit_Message
+	;call	delay
+	call	I2C_Read_Pixel
+	call	UART_Transmit_Message
 	call	LCD_Update
 	bra	start
 	
