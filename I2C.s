@@ -2,11 +2,10 @@
     
 ;Holds all the code required for communication with sensor
 
-global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixel, Pixel_Data
+global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, Pixel_Data
     
     
 psect	udata_acs	;reserve data in access RAM 
-I2C_Data: ds 1
 count:	  ds 1
     
 psect	udata_bank3	;reserve data in RAM bank 3 (doesnt affect other vars)
@@ -51,7 +50,7 @@ I2C_Set_Sensor_On:
     call    check_int	    
     return
     
-I2C_Read_Pixel: 
+I2C_Read_Pixels: 
     ;Grid-EYE_AMG88X_I2C communication (p20)
     ;(p317)
     lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
