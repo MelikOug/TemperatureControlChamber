@@ -1,6 +1,6 @@
 #include <xc.inc>
     
-global  UART_Setup, UART_Transmit_Message, msg
+global  UART_Setup, UART_Transmit_Message, Pixel_Data
 
 psect	udata_acs   ; reserve data space in access ram
 UART_counter: ds    1	    ; reserve 1 byte for variable UART_counter
@@ -18,19 +18,21 @@ UART_Setup:
 					; must set TRISC6 to 1
     return
 
-UART_Transmit_Message:	    ; Message stored at FSR2, length stored in W
-    ;movwf   UART_counter, A
-;UART_Loop_message:
-    ;movf    POSTINC2, W, A
-    ;call    UART_Transmit_Byte
-    ;decfsz  UART_counter, A
-    ;bra	    UART_Loop_message
-    ;return
+UART_Transmit_Message:	    ; Message stored at FSR2, length is 128
+    movlw 128
+    movwf   UART_counter, A
+    lfsr    0, Pixel_Data
+UART_Loop_message:
+    movf    POSTINC0, W, A  ; Moves data stored at address in FSR0 to WR
+    call    UART_Transmit_Byte
+    decfsz  UART_counter, A
+    bra	    UART_Loop_message
+    return
 
 UART_Transmit_Byte:	    ; Transmits byte stored in W
     btfss   TX1IF	    ; TX1IF is set when TXREG1 is empty
     bra	    UART_Transmit_Byte
-    movff   msg, TXREG1, A
+    movwf   TXREG1, A
     return
 
 
