@@ -14,35 +14,37 @@ Pixel_Data:	ds 0x80 ;reserve 128 bytes for temperature data from pixels
 psect	I2C_code,class=CODE
     
 I2C_Setup:    
-    clrf  SSP1CON2
+    ;clrf  SSP1CON2 ?
     bsf	  PIE1,	  3	;Sets SSP1IE Bit (Master Scynchronous Serial Port Interrupt Enable bit)
-    bcf	  PIR1,	  3	;Clear SSP1IF
     bsf	  INTCON, 6	;Set PEIE (Enable Peripheral Enable Bit)
+   ;bsf   INTCON, 7	;Sets  GIE bit (Global Interrupt Bit)?
     
-    bsf	  TRISC, 3	;SCL and SDA are inputs
+    bsf	  TRISC, 3	;SCL1 (RC3) and SDA1 (RC4) are inputs
     bsf	  TRISC, 4
     
+    movlw   00000000B	;MSB = 0 = Slew-Rate control enabled for 400kHz mode (p292)
+    movwf   SSP1STAT	
+    
+    movlw   00001001B	;baud rate = 400KHz @ 16MHz
+    movwf   SSP1ADD	
+    ;When the MSSP is configured in Master mode, the lower seven
+    ;bits of SSPxADD act as the Baud Rate Generator reload value (p291)
+    
     movlw 00101000B 
-    movwf SSP1CON1	;config for master mode (p284)
-    
-    ;movlw 0x27
-    movlw  00001001B
-    movwf SSP1ADD	;baud rate = 400KHz @ 16MHz
-    
-    movlw 00000000B 
-    movwf SSP1STAT	;slew rate
-    
-    bsf	  INTCON, 7	;Sets  GIE bit (Global Interrupt Bit_
+    movwf SSP1CON1	;config for master mode (p293) 
+    ;SSPEN <5> = 1 
+    ;SSPM <3:0> = 1000 = I2C Master mode: clock = FOSC/(4 * (SSPxADD + 1))
     
     return
 
 I2C_Set_Sensor_On: 
     ;Grid-EYE_AMG88X_I2C communication (p2)
-    ;21.4.6.1 I2C? Master Mode Operation (p282- & 302-)
-    ;
-    bsf	    SSP1CON2, 0	    ;Generate start condition (p285)
-			    ;SSPxIF is set (bsf PIR1, 3 ) when done
+    ;21.4.6.1 I2C Master Mode Operation (p312)
+    
+    bsf	    SSP1CON2, 0	    ;Generate start condition (p294)
+			    ;SSP1IF is set (bsf PIR1, 3 ) when done (p312)
     call    check_int	    ;check to see if done
+    
     movlw   110100010B	    ;MS7Bits = slave address, LSB = 0 = Write
     call    load_buff	    ;Send to into buffer which sends out to sensor
 			    ;Perform necessary checks before continuing
@@ -54,7 +56,7 @@ I2C_Set_Sensor_On:
     call    load_buff	    
     
     bsf	    SSP1CON2, 2	    ;Generate stop condition
-			    ;SSPxIF is set (bsf PIR1, 3 ) when done
+			    ;SSP1IF is set (bsf PIR1, 3 ) when done
     call    check_int	    
     return
     
@@ -89,9 +91,9 @@ Read_Loop:
     call    check_int
     bsf	    SSP1CON2, 4	    ;Sets ACKEN bit to transmit ACKDT to sensor
     call    check_int	    
+    
     decfsz  count, A	    ;Decrement count variable by 1. Skip if 0.
     bra	    Read_Loop	    ;Repeat until all data is read
-    
     bsf	    SSP1CON2, 5     ;Sets ACKDT Bit (NACK) (NACK only for final)
     bsf	    SSP1CON2, 4	    ;Sets ACKEN bit to transmit ACKDT to slave
     call    check_int	    
