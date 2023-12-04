@@ -2,8 +2,7 @@
     
 global  KEY_Setup, KEY_Read_Message
 global  state, val, col_val, row_val, num, Bindex, pos, msg
-extrn	delay
-    
+extrn	LCD_delay_ms
 
 psect	udata_acs   ;reserve data space in access ram
 state:	    ds 1
@@ -85,7 +84,8 @@ switch_to_row:
     movlw   0xF0
     movwf   state, A
     movff   state, TRISE    ;sets input pins to 4,5,6,7 ready for row testing stage
-    call    delay	    ;delay so that TRISE pins have time to settle
+    movlw   10
+    call    LCD_delay_ms	    ;delay 10ms so that TRISE pins have time to settle
     
     bra	    KEY_Read_Message	;read message from keypad again
   
