@@ -2,7 +2,7 @@
 
 ; Assembly source line config statements
 
-#include <xc.inc>
+#include  <xc.inc>
 
 ; CONFIG1L
   CONFIG  RETEN = ON            ; VREG Sleep Enable bit (Enabled)
@@ -21,7 +21,7 @@
   CONFIG  BOREN = SBORDIS       ; Brown Out Detect (Enabled in hardware, SBOREN disabled)
   CONFIG  BORV = 3              ; Brown-out Reset Voltage bits (1.8V)
   CONFIG  BORPWR = ZPBORMV      ; BORMV Power level (ZPBORMV instead of BORMV is selected)
-
+  
 ; CONFIG2H
   CONFIG  WDTEN = OFF		; Watchdog Timer (WDT disabled in hardware and software)
   CONFIG  WDTPS = 1048576       ; Watchdog Postscaler (1:1048576)
@@ -84,5 +84,5 @@
 
 ; CONFIG7H
   CONFIG  EBRTB = OFF           ; Table Read Protect Boot (Disabled)
-
+  
   end
