@@ -1,7 +1,7 @@
 #include <xc.inc>
 
-global  LCD_Setup, LCD_Update, LCD_tmp, msg, LCD_counter, LenLine1, LenLine2
-
+global  LCD_Setup, LCD_Update, LCD_delay_ms
+global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2	
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
 Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
