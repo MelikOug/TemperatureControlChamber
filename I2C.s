@@ -1,5 +1,5 @@
 #include <xc.inc>
-    
+
 ;Holds all the code required for communication with sensor
 
 global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, Pixel_Data
@@ -14,25 +14,33 @@ Pixel_Data:	ds 0x80 ;reserve 128 bytes for temperature data from pixels
 psect	I2C_code,class=CODE
     
 I2C_Setup:    
-    movlw 00101000B 
-    movwf SSP1CON1 ; config for master mode
+    clrf  SSP1CON2
+    bsf	  PIE1,	  3	;Sets SSP1IE Bit (Master Scynchronous Serial Port Interrupt Enable bit)
+    bcf	  PIR1,	  3	;Clear SSP1IF
+    bsf	  INTCON, 6	;Set PEIE (Enable Peripheral Enable Bit)
     
-    movlw 0x27
-    movwf SSP1ADD ; baud rate = 400KHz @ 16MHz
+    bsf	  TRISC, 3	;SCL and SDA are inputs
+    bsf	  TRISC, 4
+    
+    movlw 00101000B 
+    movwf SSP1CON1	;config for master mode (p284)
+    
+    ;movlw 0x27
+    movlw  00001001B
+    movwf SSP1ADD	;baud rate = 400KHz @ 16MHz
     
     movlw 00000000B 
-    movwf SSP1STAT ; slew rate
+    movwf SSP1STAT	;slew rate
     
-    movlw 00011000B
-    iorwf TRISC,F ; SCL and SDA are inputs
+    bsf	  INTCON, 7	;Sets  GIE bit (Global Interrupt Bit_
     
     return
 
 I2C_Set_Sensor_On: 
     ;Grid-EYE_AMG88X_I2C communication (p2)
-    ;21.4.6.1 I2C? Master Mode Operation (p312+317)
+    ;21.4.6.1 I2C? Master Mode Operation (p282- & 302-)
     ;
-    bsf	    SSP1CON2, 0	    ;Generate start condition
+    bsf	    SSP1CON2, 0	    ;Generate start condition (p285)
 			    ;SSPxIF is set (bsf PIR1, 3 ) when done
     call    check_int	    ;check to see if done
     movlw   110100010B	    ;MS7Bits = slave address, LSB = 0 = Write
@@ -73,6 +81,7 @@ I2C_Read_Pixels:
     movwf   count, A	    ;Set this value equal to a count variable
     bsf	    SSP1CON2, 3	    ;Reception mode (RCEN) enabled (p317)
     call    check_int
+    
 Read_Loop:
     movff   SSP1BUF, POSTINC0 ;Moves received data to wherever FSR0 points to in bank3
 			    ;Then increments the address in FSR0 ready for the next pixel data
