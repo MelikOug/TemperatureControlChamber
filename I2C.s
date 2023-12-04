@@ -14,12 +14,13 @@ Pixel_Data:	ds 0x80 ;reserve 128 bytes for temperature data from pixels
 psect	I2C_code,class=CODE
     
 I2C_Setup:    
-    ;clrf  SSP1CON2 ?
-    bsf	  PIE1,	  3	;Sets SSP1IE Bit (Master Scynchronous Serial Port Interrupt Enable bit)
-    bsf	  INTCON, 6	;Set PEIE (Enable Peripheral Enable Bit)
-   ;bsf   INTCON, 7	;Sets  GIE bit (Global Interrupt Bit)?
+    clrf  SSP1CON2
+    bsf	  INTCON, 6	;Set PEIE (Enable Peripheral Enable Bit) (p143)
+    bsf	  PIE1,	  3	;Sets SSP1IE Bit (Master Scynchronous Serial Port Interrupt Enable bit (p152) 
+    bsf	  IPR1,	  3	;Master Synchronous Serial Port Interrupt Priority bit = High priorty (p157)
+    bsf	  RCON,	  7	;(IPEN bit) Enable priority levels on all interrupts (p162)
     
-    bsf	  TRISC, 3	;SCL1 (RC3) and SDA1 (RC4) are inputs
+    bsf	  TRISC, 3	;SCL1 (RC3) and SDA1 (RC4) are inputs (p175)
     bsf	  TRISC, 4
     
     movlw   00000000B	;MSB = 0 = Slew-Rate control enabled for 400kHz mode (p292)
