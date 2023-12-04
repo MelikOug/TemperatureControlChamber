@@ -1,14 +1,11 @@
 #include <xc.inc>
     
-
-
-psect	udata_acs   ; reserve data space in access ram
-
-
-psect	uart_code,class=CODE
+global  External_Setup
 
 External_Setup:
-    bcf	TRISF, 0
+    clrf    LATF
+    movlw   0x00
+    movwf   TRISF,A
+    bcf	    LATF, 0
     return
-
 
