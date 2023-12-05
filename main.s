@@ -29,20 +29,16 @@ setup:	bcf	CFGS	; point to Flash program memory
 	;	call	External_Setup
 	call	I2C_Setup
 	call	I2C_Set_Sensor_On
-	call	I2C_Read_Pixels
 	call	LCD_Setup	; setup LCD
 	call	UART_Setup
 	call	KEY_Setup	; setup KeyPad
 	
+	call	I2C_Read_Pixels
 	goto	start
 	
 
-    
-	
-	
 start:
-	call	KEY_Read_Message
-	;call	I2C_Read_Pixels
+	call	KEY_Read_Message	
 	call	UART_Transmit_Message
 	call	LCD_Update
 	bra	start
