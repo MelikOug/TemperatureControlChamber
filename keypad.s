@@ -55,7 +55,10 @@ test_None:		    ;test to see if anything is pressed
     movlw   0x00	    
     cpfseq  val, A	    ;compares val with 0x00
     bra	    test_end	    ;if not equal, branch to test_end
-    bra	    KEY_Read_Message;if equal, read message again
+    ;bra	    KEY_Read_Message;if equal, read message again
+    movlw   0xFF
+    movwf   msg, A
+    return		    ;If equal set msg to 0xFF and return
    
 test_end:		    ;test to see if this is the end of number reading process
     clrf    Bindex, A	    ;Clears Bindex
@@ -134,7 +137,7 @@ test_continue:			;test to see if button is still being held
     movff LATH, val		;moves value of LATH to val
     movlw 0x00		
     cpfseq  val, A		;is val = 0 (button off). If true skip line
-    bra	  test_continue		;val is not 0, button is still on, repeat loop
+    bra	  test_continue		;val is not 0, button is still on, repeat loop 
     movff    TABLAT, msg, A	;stores keypad character in WR ready to be used
     call    KEY_Setup		;returns program to initial state
     return			;returns to main program
