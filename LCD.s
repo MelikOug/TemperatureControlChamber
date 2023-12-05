@@ -144,6 +144,12 @@ LCD_Loop_message:
 	
 	
 LCD_Update:
+    
+Test_None:
+	movlw	0xFF
+	cpfseq	msg, A	;is msg = 0xFF -> return if True
+	bra	Test_C	
+	return
 	    
 Test_C:
 	movlw	0x43
