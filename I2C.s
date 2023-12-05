@@ -103,9 +103,7 @@ Read_Loop:
     call    check_int
     return
     
-    
-    
-    
+
     
 load_buff:
     movwf   SSP1BUF
