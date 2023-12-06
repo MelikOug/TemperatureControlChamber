@@ -3,12 +3,15 @@
 ;Holds all the code required for communication with sensor
 
 global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, Pixel_Data, check_int
-    
+extrn	UART_Transmit_Message
     
 psect	udata_acs	;reserve data in access RAM 
 count:	     ds 1
 sum_low:     ds 2
 sum_high:    ds 2
+overflow:    ds 2
+numerator:   ds 1
+denominator: ds 1
 
     
 psect	udata_bank3	;reserve data in RAM bank 3 (doesnt affect other vars)
@@ -113,6 +116,8 @@ Read_Loop:
     
     bsf	    SSP1CON2, 2	    ;Generate stop condition
     call    check_int
+    
+    call    I2C_Rotate_Send_Pixels
     return
    
     
@@ -134,7 +139,6 @@ check_AckR:
     return
    
 
-I2C_Average_Pixels:
     
 I2C_Sum_Pixels:
     ;Need to add the contents of all the 64 pixels (12bit) 
@@ -148,11 +152,18 @@ I2C_Sum_Pixels:
     movf    POSTINC0, W
     addwfc  sum_high, F
     decfsz  count, A
-    bra	    I2C_Divide_Pixels
+    ;bra	    I2C_Rotate_Pixels
     bra	    I2C_Sum_Pixels
 
-I2C_Divide_Pixels:
-    ;Then divide total by (64*4 = 256 = 0x100 = Rotate right 8 times)
+    
+I2C_Rotate_Send_Pixels:
+    lfsr    0, Pixel_Data
+    rrcf    INDF0, F, A
+    btfsc   STATUS, 0
+    bsf	    overflow, 0
+    
+    return
+    
     
     
     
