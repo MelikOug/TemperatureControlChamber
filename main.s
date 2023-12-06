@@ -16,13 +16,7 @@ psect	code, abs
 rst: 	org 0x0
  	goto	setup
 
-int_hi: org 0x0008
-        movlw 0x88
-        movwf  LATE, A 
-	retfie f
- ;goto check_int
-	
-    org	0x100		
+			
 	; ******* Programme FLASH read Setup Code ***********************
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
@@ -33,14 +27,15 @@ setup:	bcf	CFGS	; point to Flash program memory
 	call	UART_Setup
 	call	KEY_Setup	; setup KeyPad
 	
-	call	I2C_Read_Pixels
 	goto	start
 	
 
 start:
-	call	KEY_Read_Message	
+	call	KEY_Read_Message
+	call	I2C_Read_Pixels
 	call	UART_Transmit_Message
 	call	LCD_Update
+	;goto	$
 	bra	start
 	
 	end	rst
