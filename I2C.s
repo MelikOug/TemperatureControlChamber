@@ -6,33 +6,39 @@ global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, Pixel_Data, check_int
     
     
 psect	udata_acs	;reserve data in access RAM 
-count:	  ds 1
+count:	     ds 1
+sum_low:     ds 2
+sum_high:    ds 2
+
     
 psect	udata_bank3	;reserve data in RAM bank 3 (doesnt affect other vars)
-Pixel_Data:	ds 0x80 ;reserve 128 bytes for temperature data from pixels
+Pixel_Data: ds 0x80 ;reserve 128 bytes for temperature data from pixels
     
 psect	I2C_code,class=CODE
     
 I2C_Setup:    
-    clrf  SSP1CON2
-    bcf   INTCON, 7
-    bcf	  INTCON, 6	;Set PEIE (Enable Peripheral Enable Bit) (p143)
-    bsf	  PIE1,	  3	;Sets SSP1IE Bit (Master Scynchronous Serial Port Interrupt Enable bit (p152) 
-    bsf	  IPR1,	  3	;Master Synchronous Serial Port Interrupt Priority bit = High priorty (p157)
-    bcf	  RCON,	  7	;(IPEN bit) Enable priority levels on all interrupts (p162)
-    bsf	  TRISC, 3	;SCL1 (RC3) and SDA1 (RC4) are inputs (p175)
-    bsf	  TRISC, 4
+    clrf    SSP1CON2
     
-    movlw   00000000B	;MSB = 0 = Slew-Rate control enabled for 400kHz mode (p292)
+    bcf	    RCON, 7	    ;(Clear IPEN bit) Disable priority levels on all interrupts (p162)
+    bcf	    INTCON, 7	    ;Clear GIE (Disables all interrupts) (p143)
+    bcf	    INTCON, 6	    ;Clear PEIE (Disable all peripheral interrupts) (p143)
+    
+    bsf	    PIE1, 3	    ;Sets SSP1IE Bit (Master Scynchronous Serial Port Interrupt Enable bit (p152) 
+    bsf	    IPR1, 3	    ;Master Synchronous Serial Port Interrupt Priority bit = High priorty (p157)
+    
+    bsf	    TRISC, 3	    ;SCL1 (RC3) and SDA1 (RC4) are inputs (p175)
+    bsf	    TRISC, 4
+    
+    movlw   00000000B	    ;MSB = 0 = Slew-Rate control enabled for 400kHz mode (p292)
     movwf   SSP1STAT	
     
-    movlw   0x27	;baud rate = 100KHz @ 16MHz (p313)
+    movlw   0x27	    ;baud rate = 100KHz @ 16MHz (p313)
     movwf   SSP1ADD	
     ;When the MSSP is configured in Master mode, the lower seven
     ;bits of SSPxADD act as the Baud Rate Generator reload value (p291)
     
-    movlw 00101000B 
-    movwf SSP1CON1	;config for master mode (p293) 
+    movlw   00101000B 
+    movwf   SSP1CON1	    ;config for master mode (p293) 
     ;SSPEN <5> = 1 
     ;SSPM <3:0> = 1000 = I2C Master mode: clock = FOSC/(4 * (SSPxADD + 1))
     
@@ -43,7 +49,6 @@ I2C_Set_Sensor_On:
     ;21.4.6.1 I2C Master Mode Operation (p312)
     bcf	    PIR1, 3
     bsf	    SSP1CON2, 0	    ;Generate start condition (p294) 
-    
     ;SSP1IF is set (bsf PIR1, 3 ) when done (p312)
     call    check_int	    ;check to see if done 
     
@@ -124,7 +129,31 @@ check_int:
     return
     
 check_AckR:
-    btfsc SSP1CON2, 6	    ;check if ack was received by slave (0 if received)
-    bra check_AckR	    ;continue polling if not   
+    btfsc   SSP1CON2, 6	    ;check if ack was received by slave (0 if received)
+    bra	    check_AckR	    ;continue polling if not   
     return
    
+
+I2C_Average_Pixels:
+    
+I2C_Sum_Pixels:
+    ;Need to add the contents of all the 64 pixels (12bit) 
+    lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
+    movlw   64
+    movwf   count, A
+    
+    movf    POSTINC0, W
+    addwf   sum_low, F
+    
+    movf    POSTINC0, W
+    addwfc  sum_high, F
+    decfsz  count, A
+    bra	    I2C_Divide_Pixels
+    bra	    I2C_Sum_Pixels
+
+I2C_Divide_Pixels:
+    ;Then divide total by (64*4 = 256 = 0x100 = Rotate right 8 times)
+    
+    
+    
+    
