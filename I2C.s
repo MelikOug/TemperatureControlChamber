@@ -157,6 +157,8 @@ I2C_Sum_Pixels:
 
     
 I2C_Rotate_8:
+    movlw   8
+    movwf   count	    ;Number of right rotations
     lfsr    0, Pixel_Data
     bcf	    STATUS, 0	    ;clear carry flag
     clrf    overflow, A	    ;clear overflow
