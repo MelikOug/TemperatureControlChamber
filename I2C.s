@@ -3,16 +3,13 @@
 ;Holds all the code required for communication with sensor
 
 global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, I2C_Average_Pixels
-global Pixel_Data, overflow, bitnum, numerator, denominator
+global Pixel_Data, sum_low, sum_high, below_point, count
     
 psect	udata_acs	;reserve data in access RAM 
 count:	     ds 1
-bitnum:	     ds 1
 sum_low:     ds 2
 sum_high:    ds 2
-overflow:    ds 1
-numerator:   ds 1
-denominator: ds 1
+below_point: ds 1
 
     
 psect	udata_bank3	;reserve data in RAM bank 3 (doesnt affect other vars)
@@ -139,12 +136,14 @@ check_AckR:
   
     
 I2C_Average_Pixels:
-I2C_Sum_Pixels:
-    ;Need to add the contents of all the 64 pixels (12bit) 
     lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
-    movlw   64
+    movlw   64		    ;Number of pixels to read
     movwf   count, A
-    
+    clrf    sum_low
+    clrf    sum_high
+    clrf    below_point
+I2C_Sum_Pixels:
+    ;Need to add the contents of all the 64 pixels (4bitH|8bitL) 
     movf    POSTINC0, W
     addwf   sum_low, F, A
     
@@ -152,41 +151,27 @@ I2C_Sum_Pixels:
     addwfc  sum_high, F, A  ;add through carry
     
     decfsz  count, A
-    bra     I2C_Rotate_8
     bra	    I2C_Sum_Pixels
-
+    bra     I2C_Divide_By_256
     
-I2C_Rotate_8:
-    movlw   8
-    movwf   count	    ;Number of right rotations
-    lfsr    0, Pixel_Data
-    bcf	    STATUS, 0	    ;clear carry flag
-    clrf    overflow, A	    ;clear overflow
-    clrf    bitnum, A	    ;tracks the bit num of overflow from 0 to 7
-    lfsr    1, bitnum
-    movf    INDF1, W
-    movlw   00000001B
-    movwf   denominator, A	    ;set denominator to 1 for now
-    movlw   2
-    movwf   count, A
+I2C_Divide_By_256:
+    ;16 bit number rotated right 8 times (divided by 64 and then by 4 =  divided by 2^8)
+    ;	1010 0011 1100 1111 (41935)
+    ;-> 0000 0000 1010 0011 | 1100 1111  (163 | 207)
+    ;sum_high becomes the integer quotient
+    ;suml_low becomes the remainder
+    ;41935/256 = 163.80859375
+    ;207 * 100,000,000/256 = 80859375 which is our number beyond decimal point
+    ;Will round to 1 dp
+    ;((207*10) + x)/256 = 8 (iterate through x until result is a whole number)
+    ;Fast way to do this is to increment 2070 until lower 8 bits are 0 -> LSB of high byte is incremented
+    ;New incremented high byte = 8
+    ;Therfore our average number is sum_high . ((HB of 2070)+1)
     
-loop:
-    rlncf   overflow, F, A
-    rrcf    INDF0, F, A  ;Rotate right, trigger carry flag
-    btfsc   STATUS, 0
-    bsf	    overflow,0, A ;set the overflow <value stored in FSR1 address = bitnum>  bit (0 then 1)
-    incf    bitnum, F, A
-    rlncf   denominator, F, A
-    decf    count, F, A
-    movlw   0		    ;comparison value for later
-    cpfseq  count, A
-    call    loop
-    movff   overflow, numerator, A	    
-    
-    
-    
-    return
-    
+    movf    sum_low, W, A   ;Moves remainder into WR
+    mullw   10		    ;Multiply by 10 and store in PRODH|PROD
+    incf    PRODH, W, A	    ;increment the high byte of result by one
+    movwf   below_point, A
     
     
     
