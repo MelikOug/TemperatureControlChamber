@@ -1,7 +1,7 @@
 #include <xc.inc>
 
 global  LCD_Setup, LCD_Update, LCD_delay_ms
-global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2	
+global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array	
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
 Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
@@ -133,6 +133,7 @@ LDC_Set_Line2:
 	
 LCD_Loop_message:
 	movf    POSTINC2, W, A  ; Move value stored at FSR2 address to WR, Inc address
+	call    LCD_Send_Byte_D
 	decfsz  LCD_counter, A
 	bra	LCD_Loop_message
 	return
