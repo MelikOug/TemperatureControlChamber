@@ -2,14 +2,15 @@
 
 ;Holds all the code required for communication with sensor
 
-global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, Pixel_Data, check_int
-extrn	UART_Transmit_Message
+global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, I2C_Average_Pixels
+global Pixel_Data, overflow, bitnum, numerator, denominator
     
 psect	udata_acs	;reserve data in access RAM 
 count:	     ds 1
+bitnum:	     ds 1
 sum_low:     ds 2
 sum_high:    ds 2
-overflow:    ds 2
+overflow:    ds 1
 numerator:   ds 1
 denominator: ds 1
 
@@ -116,8 +117,6 @@ Read_Loop:
     
     bsf	    SSP1CON2, 2	    ;Generate stop condition
     call    check_int
-    
-    call    I2C_Rotate_Send_Pixels
     return
    
     
@@ -137,9 +136,9 @@ check_AckR:
     btfsc   SSP1CON2, 6	    ;check if ack was received by slave (0 if received)
     bra	    check_AckR	    ;continue polling if not   
     return
-   
-
+  
     
+I2C_Average_Pixels:
 I2C_Sum_Pixels:
     ;Need to add the contents of all the 64 pixels (12bit) 
     lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
@@ -147,20 +146,42 @@ I2C_Sum_Pixels:
     movwf   count, A
     
     movf    POSTINC0, W
-    addwf   sum_low, F
+    addwf   sum_low, F, A
     
     movf    POSTINC0, W
-    addwfc  sum_high, F
+    addwfc  sum_high, F, A  ;add through carry
+    
     decfsz  count, A
-    ;bra	    I2C_Rotate_Pixels
+    bra     I2C_Rotate_8
     bra	    I2C_Sum_Pixels
 
     
-I2C_Rotate_Send_Pixels:
+I2C_Rotate_8:
     lfsr    0, Pixel_Data
-    rrcf    INDF0, F, A
+    bcf	    STATUS, 0	    ;clear carry flag
+    clrf    overflow, A	    ;clear overflow
+    clrf    bitnum, A	    ;tracks the bit num of overflow from 0 to 7
+    lfsr    1, bitnum
+    movf    INDF1, W
+    movlw   00000001B
+    movwf   denominator, A	    ;set denominator to 1 for now
+    movlw   2
+    movwf   count, A
+    
+loop:
+    rlncf   overflow, F, A
+    rrcf    INDF0, F, A  ;Rotate right, trigger carry flag
     btfsc   STATUS, 0
-    bsf	    overflow, 0
+    bsf	    overflow,0, A ;set the overflow <value stored in FSR1 address = bitnum>  bit (0 then 1)
+    incf    bitnum, F, A
+    rlncf   denominator, F, A
+    decf    count, F, A
+    movlw   0		    ;comparison value for later
+    cpfseq  count, A
+    call    loop
+    movff   overflow, numerator, A	    
+    
+    
     
     return
     
