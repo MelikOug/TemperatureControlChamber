@@ -1,7 +1,7 @@
 #include <xc.inc>
 
 global  LCD_Setup, LCD_Update, LCD_delay_ms
-global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array	
+global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
 Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
@@ -63,14 +63,12 @@ LCD_Setup:
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
-	
-	lfsr	1, LenLine2
 	call	LCD_Frame
 	return
 
 	
 LCD_Frame:
-		
+	lfsr	1, LenLine2
 ;Current Line2    
 	lfsr	0, Line2Array		; Load FSR0 with address in bank 2	
 	movlw	low highword(Line2)	; address of data in PM
