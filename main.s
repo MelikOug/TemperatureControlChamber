@@ -4,7 +4,7 @@ extrn	KEY_Setup, KEY_Read_Message  ; external subroutines
 extrn	LCD_Setup, LCD_Update
 extrn	UART_Setup, UART_Transmit_Pixels
 extrn	I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, I2C_Average_Pixels
-extrn	External_Setup
+extrn	External_Setup, External_Mode
     
 
 
@@ -35,6 +35,7 @@ start:
 	call	UART_Transmit_Pixels
 	call	I2C_Average_Pixels
 	call	LCD_Update
+	call	External_Mode
 	bra	start
 	
 	end	rst
