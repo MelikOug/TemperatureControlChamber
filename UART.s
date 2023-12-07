@@ -48,7 +48,7 @@ UART_Transmit_Byte:	    ; Transmits byte stored in W
 
     
 Pixel_Delay:
-    movlw   1000
+    movlw   10000
     call    LCD_delay_ms
     movlw   2
     movwf   Pixel_Counter	;reset pixel counter 
