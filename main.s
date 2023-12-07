@@ -15,7 +15,8 @@ psect	code, abs
 rst: 	org 0x0
  	goto	setup
 
-			
+		
+	org 0x100
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
 	call	External_Setup
@@ -34,7 +35,6 @@ start:
 	call	UART_Transmit_Pixels
 	call	I2C_Average_Pixels
 	call	LCD_Update
-	;goto	$
 	bra	start
 	
 	end	rst
