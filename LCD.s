@@ -2,6 +2,7 @@
 
 global  LCD_Setup, LCD_Update, LCD_delay_ms
 global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array
+extrn	 sum_high, below_point
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
 Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
@@ -25,6 +26,9 @@ LCD_cnt_ms:	ds 1   ; reserve 1 byte for ms counter
 LCD_tmp:	ds 1   ; reserve 1 byte for temporary use
 LCD_counter:	ds 1   ; reserve 1 byte for counting through nessage
 counter:	ds 1   ; reserve one byte for a counter variable
+input1:         ds 1
+input2:		ds 1   ;second inputted number 
+target:		ds 2
 LCD_E	EQU 5	; LCD enable bit
 LCD_RS	EQU 4	; LCD register select bit
 
@@ -65,7 +69,7 @@ LCD_Setup:
 	call	LCD_delay_x4us
 	call	LCD_Frame
 	return
-
+	
 	
 LCD_Frame:
 	lfsr	1, LenLine2
@@ -85,6 +89,7 @@ loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	bra	loop			; keep going until finished
 	lfsr	2, Line2Array		; Moves address of Line2Array in FSR2
 	movlw	LenLine2		; Moves address LenLine2 (11) into WR
+	movwf	LCD_counter, A
 	call	LCD_Write_Message
 
 ;Current Line1    
@@ -103,6 +108,7 @@ loop2: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	bra	loop2			; keep going until finished
 	lfsr	2, Line1Array
 	movlw	LenLine1		; Moves address of LenLine1 to WR 
+	movwf	LCD_counter, A
 	call	LCD_Write_Message
 	return
 	
@@ -113,7 +119,6 @@ LCD_Write_Message:
 	bra	LDC_Set_Line2
 	
 LDC_Set_Line1:
-	movwf	LCD_counter, A
 	movlw	10000000B
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
@@ -135,19 +140,16 @@ LCD_Loop_message:
 	decfsz  LCD_counter, A
 	bra	LCD_Loop_message
 	return
-
-	
-	;movlw   0xC0
-	;call    LCD_Send_Byte_I	;changes LCD Output to 2nd line
 	
 	
 	
 LCD_Update:
     
 Test_None:
-	movlw	0xFF
-	cpfseq	msg, A	;is msg = 0xFF -> return if True
-	bra	Test_C	
+	movlw	0x00
+	cpfseq	msg, A	;is msg = 0x00 -> Update current if true
+	bra	Test_C
+	bra	Update_Current
 	return
 	    
 Test_C:
@@ -158,30 +160,50 @@ Test_C:
 Test_E:
 	movlw	0x45
 	cpfseq	msg, A	;is msg = 'E' -> call enter subroutine
-	bra	Update
+	bra	Update_Target
 	bra	LCD_Enter
-	
+
+  
 LCD_Clear:
 	movlw   0x01    ;sends 01 as instruction (this clears LCD)
 	call    LCD_Send_Byte_I
 	movlw	2
 	call	LCD_delay_ms	; wait 2ms for LCD to start up properly		
-	;call	LCD_delay_x4us ; wait 40us
 	call	LCD_Frame
 	
 	return  ;returns to main.s
     
 LCD_Enter:
-	;Read number after "target:"
+	;read	input1 and input2 after target
+	;combine into input value
+	;move combination to target
 	;Send system message to change temp to target temp
 	return
-
-Update:
-	;movlw	00000110B	; entry mode incr by 1 no shift
-	;call	LCD_Send_Byte_I
+	
+Update_Target:
+	movlw	10000000B	;Change this to address after 1st line colon
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	
 	movf	msg, W, A; Transmits byte stored in msg to data reg
 	call	LCD_Send_Byte_D
 	return
+
+Update_Current:
+	movlw	11000000B	;Change this to address of pixel after 2nd line colon
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	
+	movf	sum_high,W, A
+	call	LCD_Send_Byte_D
+	movlw	'.'
+	call	LCD_Send_Byte_D
+	movf	below_point, W, A
+	call	LCD_Send_Byte_D
+	return
+    
     
     
     
