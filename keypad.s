@@ -56,7 +56,7 @@ test_None:		    ;test to see if anything is pressed
     cpfseq  val, A	    ;compares val with 0x00
     bra	    test_end	    ;if not equal, branch to test_end
     ;bra	    KEY_Read_Message;if equal, read message again
-    movlw   0xFF
+    movlw   0x00
     movwf   msg, A
     return		    ;If equal set msg to 0xFF and return
    
@@ -131,14 +131,14 @@ decode:
     TBLRD*			;reads the combined address of TBLPTRU|TBLPTRH|TBLPTRU from program memory and stores result in TABLAT
 
 test_continue:			;test to see if button is still being held
-    movf  PORTE, W, A		;move value in PORTE to WR
-    XORWF state, W, A		;Exclusive OR WR (PORTE) with State (Should be same value)
-    movwf LATH			;move value in WR to LATH
-    movff LATH, val		;moves value of LATH to val
-    movlw 0x00		
+    movf    PORTE, W, A		;move value in PORTE to WR
+    XORWF   state, W, A		;Exclusive OR WR (PORTE) with State (Should be same value)
+    movwf   LATH			;move value in WR to LATH
+    movff   LATH, val		;moves value of LATH to val
+    movlw   0x00		
     cpfseq  val, A		;is val = 0 (button off). If true skip line
-    bra	  test_continue		;val is not 0, button is still on, repeat loop 
-    movff    TABLAT, msg, A	;stores keypad character in WR ready to be used
+    bra	    test_continue		;val is not 0, button is still on, repeat loop 
+    movff   TABLAT, msg, A	;stores keypad character in WR ready to be used
     call    KEY_Setup		;returns program to initial state
     return			;returns to main program
 	
