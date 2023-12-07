@@ -142,7 +142,7 @@ I2C_Average_Pixels:
     movwf   count, A
     clrf    sum_low, A
     clrf    sum_high, A	    ;Will end up being value before dp
-    clrf    below_point	    ;Will end up being value after dp
+    clrf    below_point, A  ;Will end up being value after dp
 I2C_Sum_Pixels:
     ;Need to add the contents of all the 64 pixels (4bitH|8bitL) 
     movf    POSTINC0, W
