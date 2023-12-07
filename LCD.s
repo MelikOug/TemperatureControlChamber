@@ -24,12 +24,16 @@ LCD_cnt_l:	ds 1   ; reserve 1 byte for variable LCD_cnt_l
 LCD_cnt_h:	ds 1   ; reserve 1 byte for variable LCD_cnt_h
 LCD_cnt_ms:	ds 1   ; reserve 1 byte for ms counter
 LCD_tmp:	ds 1   ; reserve 1 byte for temporary use
-LCD_counter:	ds 1   ; reserve 1 byte for counting through nessage
+LCD_counter:	ds 1   ; reserve 1 byte for counting through message
 counter:	ds 1   ; reserve one byte for a counter variable
-target_high:	ds 1
-target_low:	ds 1
+    
+input_high:	ds 1
+input_low:	ds 1
 point:		ds 1
-target_below_point: ds 1
+input_below:	ds 1
+    
+target_high:	ds 1
+target_below:	ds 1
  
 LCD_E	EQU 5	; LCD enable bit
 LCD_RS	EQU 4	; LCD register select bit
@@ -41,8 +45,17 @@ psect	lcd_code,class=CODE
 	
 LCD_Setup:
 	clrf    LATB, A
-	movlw   11000000B	    ; RB0:5 all outputs
+	movlw   11000000B	    ; RB0:5 and below all outputs
 	movwf	TRISB, A
+	clrf	input_high
+	clrf	input_low
+	clrf	point
+	clrf	input_below
+	movlw	0x20
+	movwf	target_high, A	    ;default target above dp
+	movlw	0x00
+	movwf	target_below, A	    ;default target below dp
+	
 	movlw   40
 	call	LCD_delay_ms	; wait 40ms for LCD to start up properly
 	movlw	00110000B	; Function set 4-bit
@@ -157,7 +170,7 @@ Test_None:
 Test_C:
 	movlw	0x43
 	cpfseq	msg, A	;is msg = 'C' -> call clear subroutine
-	bra Test_E	
+	bra	Test_E	
 	bra	LCD_Clear
 Test_E:
 	movlw	0x45
@@ -167,9 +180,9 @@ Test_E:
 
   
 LCD_Clear:
-	clrf	target_high, A
-	clrf	target_low, A
-	clrf	target_below_point, A
+	clrf	input_high, A
+	clrf	input_low, A
+	clrf	input_below, A
 	clrf	point, A
 	
 	movlw   0x01    ;sends 01 as instruction (this clears LCD)
@@ -180,24 +193,30 @@ LCD_Clear:
 	return  ;returns to main.s
     
 LCD_Enter:
-	;read input1 and input2 after "target:" 
-	;read first val, check if = '.', if so call clear
-	;else move first val to wr
-	
-	;to target_high and target_below_point respectively
+	movf	input_high, W, A ;moves the tens digit to wr
+	mullw	10		    ;multiply by ten and store in PROD
+	movf	input_low, W, A	    ;moves the ones digit to wr
+	addwf	PROD, W, A	    ;adds whatever was in the tens column  with the ones column to give number above dp
+	movwf	target_high, A	    ;now a the correct decimal
+	movff	input_below, target_below, A ;target_below = decimal value below dp
 	return
 	
 check_high:
 	movlw	0
-	cpfseq	target_high, A
+	cpfseq	input_high, A
 	bra	check_low
-	movff	msg, target_high, A
+	movf	msg, W, A
+	andlw	0x0F
+	movwf	input_high, A ;moves lower nibble of message to input_low (convert ascii to number)
 	call	Update_Target
 	
 check_low:
-	cpfseq	target_low, A
+	movlw	0
+	cpfseq	input_low, A
 	bra	check_point
-	movff	msg, target_low, A
+	movf	msg, W, A
+	andlw	0x0F
+	movwf	input_low, A ;moves lower nibble of message to input_low (convert ascii to number)
 	call	Update_Target
 	
 check_point:
@@ -211,9 +230,11 @@ check_point:
 	
 check_below:
 	movlw	0
-	cpfseq	target_below, A
+	cpfseq	input_below, A
 	return		;don't update LCD (number limit reached)
-	movff	msg, below_point, A
+	movf	msg, W, A
+	andlw	0x0F
+	movwf	input_below, A ;moves lower nibble of message to input_below (convert ascii to number)
 	call	Update_Target
 	
 	
