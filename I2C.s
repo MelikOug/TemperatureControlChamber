@@ -173,7 +173,7 @@ I2C_Divide_By_256:
     mullw   10		    ;Multiply by 10 and store in PRODH|PROD
     incf    PRODH, W, A	    ;increment the high byte of result by one
     movwf   below_point, A
-    goto    $
+    ;goto    $
     return
     
     
