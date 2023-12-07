@@ -7,9 +7,9 @@ External_Setup:
     movlw   0x00
     movwf   TRISJ,A
     
-    bsf	    LATJ, 0	;Direction
-    bcf	    LATJ, 1	;Brake
-    bsf	    LATJ, 2	;Duty Cycle
+    bcf	    LATJ, 0	;Direction  (0)
+    bsf	    LATJ, 1	;Brake	    (1)
+    bsf	    LATJ, 2	;Duty Cycle (1)
     return
 
 
