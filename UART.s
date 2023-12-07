@@ -51,5 +51,5 @@ Pixel_Delay:
     movlw   1000
     call    LCD_delay_ms
     movlw   2
-    movwf   Pixel_Counter	;reset pixel counter 
+    movwf   Pixel_Counter, A	;reset pixel counter 
     Return
