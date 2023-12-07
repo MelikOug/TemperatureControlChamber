@@ -21,7 +21,7 @@ UART_Setup:
     return
 
 UART_Transmit_Pixels:	    ; Message stored at FSR2, length is 128
-    movlw 128
+    movlw   128
     movwf   UART_counter, A
     movlw   3
     movwf   Pixel_Counter, A; 3-1 = 2
@@ -48,7 +48,7 @@ UART_Transmit_Byte:	    ; Transmits byte stored in W
 
     
 Pixel_Delay:
-    movlw   10000
+    movlw   1000
     call    LCD_delay_ms
     movlw   2
     movwf   Pixel_Counter	;reset pixel counter 
