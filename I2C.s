@@ -67,7 +67,8 @@ I2C_Set_Sensor_On:
     bsf	    SSP1CON2, 2	    ;Generate stop condition
     call    check_int	    ;Check if SSP1IF is set		
     	    
- 
+    ;movlw   00010001B
+    ;movwf   LATE
     return
     
 I2C_Read_Pixels: 
@@ -139,9 +140,9 @@ I2C_Average_Pixels:
     lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
     movlw   64		    ;Number of pixels to read
     movwf   count, A
-    clrf    sum_low
-    clrf    sum_high
-    clrf    below_point
+    clrf    sum_low, A
+    clrf    sum_high, A	    ;Will end up being value before dp
+    clrf    below_point	    ;Will end up being value after dp
 I2C_Sum_Pixels:
     ;Need to add the contents of all the 64 pixels (4bitH|8bitL) 
     movf    POSTINC0, W
@@ -172,7 +173,8 @@ I2C_Divide_By_256:
     mullw   10		    ;Multiply by 10 and store in PRODH|PROD
     incf    PRODH, W, A	    ;increment the high byte of result by one
     movwf   below_point, A
-    
+    goto    $
+    return
     
     
     
