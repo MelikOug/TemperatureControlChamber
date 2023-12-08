@@ -29,12 +29,12 @@ counter:	ds 1   ; reserve one byte for a counter variable
     
 input_high:	ds 1
 input_low:	ds 1
-point:		ds 1
-input_below:	ds 1
     
 target_high:	ds 1
 target_below:	ds 1
  
+DDRAM_Address:  ds 1
+    
 LCD_E	EQU 5	; LCD enable bit
 LCD_RS	EQU 4	; LCD register select bit
 
@@ -51,6 +51,8 @@ LCD_Setup:
 	clrf	input_low
 	clrf	point
 	clrf	input_below
+	movlw	10000111B
+	movwf	DDRAM_Address, A    ;Set DDRAM_Address to 1 after target:
 	movlw	0x20
 	movwf	target_high, A	    ;default target above dp
 	movlw	0x00
@@ -162,21 +164,45 @@ LCD_Update:
     
 Test_None:
 	movlw	0x00
-	cpfseq	msg, A	;is msg = 0x00 -> Update current if true
+	cpfseq	msg, A		;is msg = 0x00 -> Update current if true
 	bra	Test_C
 	bra	Update_Current
 	return
 	    
 Test_C:
-	movlw	0x43
-	cpfseq	msg, A	;is msg = 'C' -> call clear subroutine
+	movlw	'C'
+	cpfseq	msg, A		;is msg = 'C' -> call clear subroutine
 	bra	Test_E	
 	bra	LCD_Clear
 Test_E:
-	movlw	0x45
-	cpfseq	msg, A	;is msg = 'E' -> call enter subroutine
-	bra	check_high
+	movlw	'E'
+	cpfseq	msg, A		;is msg = 'E' -> call enter subroutine
+	bra	Test_A
 	bra	LCD_Enter
+
+Test_A:
+	movlw	'A'
+	cpfseq	msg, A		;is msg = 'A' -> return
+	bra	Test_B
+	return
+	
+Test_B:
+	movlw	'B'
+	cpfseq	msg, A		;is msg = 'B' -> return
+	bra	Test_D
+	return
+
+Test_D:
+	movlw	'D'
+	cpfseq	msg, A		;is msg = 'D' -> return
+	bra	Test_F
+	return
+
+Test_F:
+	movlw	'F'
+	cpfseq	msg, A		;is msg = 'F' -> return
+	bra	check_high	;if not, continue
+	return
 
   
 LCD_Clear:
@@ -184,6 +210,8 @@ LCD_Clear:
 	clrf	input_low, A
 	clrf	input_below, A
 	clrf	point, A
+	movlw	10000111B
+	movwf	DDRAM_Address, A ;Reset DDRAM_Address to after target:
 	
 	movlw   0x01    ;sends 01 as instruction (this clears LCD)
 	call    LCD_Send_Byte_I
@@ -193,7 +221,7 @@ LCD_Clear:
 	return  ;returns to main.s
     
 LCD_Enter:
-	movf	input_high, W, A ;moves the tens digit to wr
+	movf	input_high, W, A    ;moves the tens digit to wr
 	mullw	10		    ;multiply by ten and store in PROD
 	movf	input_low, W, A	    ;moves the ones digit to wr
 	addwf	PROD, W, A	    ;adds whatever was in the tens column  with the ones column to give number above dp
@@ -203,53 +231,36 @@ LCD_Enter:
 	
 check_high:
 	movlw	0
-	cpfseq	input_high, A
-	bra	check_low
-	movf	msg, W, A
+	cpfseq	input_high, A	    ;check if input_high already has a value
+	bra	check_low	    ;if it does, branch to check_low
+	movf	msg, W, A	    ;if it doesn't, move our ascii message to WR
 	andlw	0x0F
-	movwf	input_high, A ;moves lower nibble of message to input_low (convert ascii to number)
+	movwf	input_high, A	    ;moves lower nibble of message to input_low (convert ascii(0x3y) to hex(0x0y))
 	call	Update_Target
 	
 check_low:
 	movlw	0
 	cpfseq	input_low, A
-	bra	check_point
+	return			    ;if input_low already has a value, just return. Only options are Clear or Enter.
 	movf	msg, W, A
 	andlw	0x0F
 	movwf	input_low, A ;moves lower nibble of message to input_low (convert ascii to number)
 	call	Update_Target
 	
-check_point:
-	btfsc	point, 0 ;skip if clear
-	bra	check_below
-	movlw	'.'
-	cpfseq	msg, A
-	return		;don't update LCD
-	bsf	point, 0 ;set point flag
-	call	Update_Target
-	
-check_below:
-	movlw	0
-	cpfseq	input_below, A
-	return		;don't update LCD (number limit reached)
-	movf	msg, W, A
-	andlw	0x0F
-	movwf	input_below, A ;moves lower nibble of message to input_below (convert ascii to number)
-	call	Update_Target
-	
 	
 Update_Target:
-	movlw	10000000B	;Change this to address after 1st line colon
+	movf	DDRAM_Address, W, A ;Address after target: (either 1st or 2nd)
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
 	movf	msg, W, A; Transmits byte stored in msg to data reg
 	call	LCD_Send_Byte_D
+	incf	DDRAM_Address, F, A
 	return
 	
 
 Update_Current:
-	movlw	0xC8	;Change this to address of pixel after "current:" (9th along)(1)48 = C8
+	movlw	0xC8	;Address of pixel after "current:" (9th along)(1)48 = C8
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
