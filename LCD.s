@@ -5,18 +5,23 @@ global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array,
 extrn	temp_high, below_point
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
-Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
-Line2Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
+Line1Array:	ds 0x20 ;reserve 32 bytes for message data for line 1
+Line2Array:	ds 0x20 ;reserve 32 bytes for message data for line 1
+SetArray:	ds 0x10
 
 psect	data	
 Line1:
-	db	'T','a','r','g','e','t',':',0x0a ;message (in PR), plus carriage return that moves cursor to the end
+	db	'T','a','r','g','e','t',':';,0x0a ;message (in PR), plus carriage return that moves cursor to the end
 	LenLine1   EQU	7	; length of data
 	align	2				
 Line2:
 	db	'C','u','r','r','e','n','t',':'  ;message (in PR)	
 	db	'N','/','A'
 	LenLine2   EQU	11	; length of data
+	align	2
+
+LineSet:db	'(','S','e','t',')'
+	LenSet	   EQU  5
 	align	2
 					
 psect	udata_acs   ; named variables in access ram
@@ -30,8 +35,7 @@ counter:	ds 1   ; reserve one byte for a counter variable
 input_high:	ds 1
 input_low:	ds 1
     
-target_high:	ds 1
-target_below:	ds 1
+target:		ds 1
  
 DDRAM_Address:  ds 1
     
@@ -47,10 +51,8 @@ LCD_Setup:
 	clrf    LATB, A
 	movlw   11000000B	    ; RB0:5 and below all outputs
 	movwf	TRISB, A
-	clrf	input_high
-	clrf	input_low
-	clrf	point
-	clrf	input_below
+	clrf	input_high, A
+	clrf	input_low, A
 	movlw	10000111B
 	movwf	DDRAM_Address, A    ;Set DDRAM_Address to 1 after target:
 	movlw	0x20
@@ -110,7 +112,7 @@ loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	call	LCD_Write_Message
 
 ;Current Line1    
-lfsr	0, Line1Array			; Load FSR0 with address in RAM	
+	lfsr	0, Line1Array		; Load FSR0 with address in RAM	
 	movlw	low highword(Line1)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
 	movlw	high(Line1)		; address of data in PM
@@ -208,8 +210,6 @@ Test_F:
 LCD_Clear:
 	clrf	input_high, A
 	clrf	input_low, A
-	clrf	input_below, A
-	clrf	point, A
 	movlw	10000111B
 	movwf	DDRAM_Address, A ;Reset DDRAM_Address to after target:
 	
@@ -225,8 +225,26 @@ LCD_Enter:
 	mullw	10		    ;multiply by ten and store in PROD
 	movf	input_low, W, A	    ;moves the ones digit to wr
 	addwf	PROD, W, A	    ;adds whatever was in the tens column  with the ones column to give number above dp
-	movwf	target_high, A	    ;now a the correct decimal
-	movff	input_below, target_below, A ;target_below = decimal value below dp
+	movwf	target, A	    ;target is updated
+	
+	lfsr	0, SetArray		; Load FSR0 with address in bank 2	
+	movlw	low highword(LineSet)	; address of data in PM
+	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+	movlw	high(LineSet)		; address of data in PM
+	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+	movlw	low(LineSet)		; address of data in PM
+	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+	movlw	LenSet			; bytes to read
+	movwf 	counter, A		; our counter register
+loop3: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
+	movff	TABLAT, POSTINC0	; move data from TABLAT to (where FSR0 points), inc FSR0	
+	decfsz	counter, A		; count down to zero
+	bra	loop3			; keep going until finished
+	lfsr	2, SetArray		; Moves address of Line2Array in FSR2
+	movlw	LenSet			; Moves address LenLine2 (11) into WR
+	movwf	LCD_counter, A
+	call	LCD_Write_Message
+	
 	return
 	
 check_high:
@@ -249,10 +267,10 @@ check_low:
 	
 	
 Update_Target:
-	movf	DDRAM_Address, W, A ;Address after target: (either 1st or 2nd)
-	call	LCD_Send_Byte_I
-	movlw	10		; wait 40us
-	call	LCD_delay_x4us
+	;movf	DDRAM_Address, W, A ;Address after target: (either 1st or 2nd)
+	;call	LCD_Send_Byte_I
+	;movlw	10		; wait 40us
+	;call	LCD_delay_x4us
 	movf	msg, W, A; Transmits byte stored in msg to data reg
 	call	LCD_Send_Byte_D
 	incf	DDRAM_Address, F, A
@@ -277,9 +295,15 @@ Update_Current:
 	
 	movlw	'.'
 	call	LCD_Send_Byte_D
+	
 	movf	below_point, W, A
 	addlw	0x30	;converts to ascii 
 	call	LCD_Send_Byte_D
+	
+	movf	DDRAM_Address, W, A ;Address after target: (either 1st or 2nd)
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
 	
 	return
     
