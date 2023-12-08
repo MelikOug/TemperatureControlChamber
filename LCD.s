@@ -2,7 +2,7 @@
 
 global  LCD_Setup, LCD_Update, LCD_delay_ms
 global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array
-extrn	 sum_high, below_point
+extrn	temp_high, below_point
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
 Line1Array:	ds 0x80 ;reserve 128 bytes for message data for line 1
@@ -254,12 +254,22 @@ Update_Current:
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
 	
-	movf	sum_high,W, A
+	swapf	temp_high, W, A
+	andlw	0x0F	;gets lower nibble (tens)
+	addlw	0x30	;converts to ascii 
 	call	LCD_Send_Byte_D
+	
+	movf	temp_high, W, A
+	andlw	0x0F	;gets lower nibble (ones)
+	addlw	0x30	;converts to ascii 
+	call	LCD_Send_Byte_D
+	
 	movlw	'.'
 	call	LCD_Send_Byte_D
 	movf	below_point, W, A
+	addlw	0x30	;converts to ascii 
 	call	LCD_Send_Byte_D
+	
 	return
     
     
