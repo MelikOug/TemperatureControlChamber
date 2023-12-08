@@ -3,12 +3,13 @@
 ;Holds all the code required for communication with sensor
 
 global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, I2C_Average_Pixels
-global Pixel_Data, sum_low, sum_high, below_point, count
+global Pixel_Data, sum_low, sum_high, below_point, count, temp_high
     
 psect	udata_acs	;reserve data in access RAM 
 count:	     ds 1
-sum_low:     ds 2
-sum_high:    ds 2
+sum_low:     ds 1
+sum_high:    ds 1
+temp_high:   ds 1
 below_point: ds 1
 
     
@@ -74,7 +75,7 @@ I2C_Set_Sensor_On:
 I2C_Read_Pixels: 
     ;Grid-EYE_AMG88X_I2C communication (p20)
     ;(p317)
-    movlw   128		    ;Number of Pixels to read * 2 (Each pixel sends low and high byte)
+    movlw   128	    ;Number of Pixels to read * 2 (Each pixel sends low and high byte)
     movwf   count, A	    ;Set this value equal to a count variable
     lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
     
@@ -173,7 +174,26 @@ I2C_Divide_By_256:
     mullw   10		    ;Multiply by 10 and store in PRODH|PROD
     incf    PRODH, W, A	    ;increment the high byte of result by one
     movwf   below_point, A
-    ;goto    $
+    
+    ;Convert sum_high decimal to equal hex
+    movlw   0
+    movwf   count, A
+    movff   sum_high, temp_high, A
+ten_loop:
+    movlw   10		;move 10 to WR
+    subwf   temp_high, F, A ;Subtract 10 from sum_high and store back in sum_high
+    btfsc   STATUS, 4	;check if result is negative (sign flag)
+    bra	    continue
+    incf    count, A
+    bra	    ten_loop    ;if not, repeat
+    
+continue:
+    movf    temp_high, W, A
+    addlw   10
+    movwf   temp_high, A
+    swapf   count, W, A ;if is, swap count = 0x0y to 0xy0 and store it  WR
+    addwf   temp_high, F, A ;add WR (0xy0) to sum_high (0x0z) and store result (0xyz) back in sum_high
+    ;sum_high has been converted from decimal value (ab) to 0xab
     return
     
     
