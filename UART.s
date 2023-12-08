@@ -21,22 +21,22 @@ UART_Setup:
     return
 
 UART_Transmit_Pixels:	    ; Message stored at FSR2, length is 128
-    movlw   130
+    movlw   129
     movwf   UART_counter, A
-    movlw   3
-    movwf   Pixel_Counter, A; 3-1 = 2
     lfsr    0, Pixel_Data
-UART_Loop_message:
-    decfsz  Pixel_Counter, A
-    bra	    Continue
-    call    Pixel_Delay
-    bra	    Continue
     
-Continue:
+    movlw   's'		    ;start byte
+    call    UART_Transmit_Byte
+    
+UART_Loop_message:
     movf    POSTINC0, W, A  ;Moves data stored at address in FSR0 to WR
     call    UART_Transmit_Byte
     decfsz  UART_counter, A
     bra	    UART_Loop_message
+    
+    movlw   'e'		    ;end byte
+    call    UART_Transmit_Byte
+    ;goto    $
     return
     
 
@@ -45,11 +45,3 @@ UART_Transmit_Byte:	    ; Transmits byte stored in W
     bra	    UART_Transmit_Byte
     movwf   TXREG1, A
     return
-
-    
-Pixel_Delay:
-    movlw   1
-    call    LCD_delay_ms
-    movlw   2
-    movwf   Pixel_Counter, A	;reset pixel counter 
-    Return
