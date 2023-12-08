@@ -55,10 +55,10 @@ test_None:		    ;test to see if anything is pressed
     movlw   0x00	    
     cpfseq  val, A	    ;compares val with 0x00
     bra	    test_end	    ;if not equal, branch to test_end
-    ;bra		    ;KEY_Read_Message;if equal, read message again
+    ;		    ;KEY_Read_Message;if equal, read message again
     movlw   0x00
     movwf   msg, A
-    return		    ;If equal set msg to 0xFF and return
+    return		    ;If equal set msg to 0x00 and return
    
 test_end:		    ;test to see if this is the end of number reading process
     clrf    Bindex, A	    ;Clears Bindex
