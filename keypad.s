@@ -19,7 +19,7 @@ map:		    ;stores map of keypad in program memory (psect data)
     db '1', '2', '3', 'F'
     db '4', '5', '6', 'E'
     db '7', '8', '9', 'D'
-    db  'A', '0','B', 'C'
+    db  'A', '0','.', 'C'
     align 2	    ;program memory must be shifter to even final byte address numbers (i.e. 0,2,4...)
     ;can check address of this map by opening file memory window, 
     ;selcting format Hex, filter ASCII and typing in a relevant letter)
