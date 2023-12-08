@@ -25,9 +25,7 @@ setup:	bcf	CFGS	; point to Flash program memory
 	call	LCD_Setup	; setup LCD
 	call	UART_Setup
 	call	KEY_Setup	; setup KeyPad
-	
 	goto	start
-	
 
 start:
 	call	KEY_Read_Message
