@@ -30,16 +30,12 @@ KEY_Setup:	    ;sets up Keypad
     movlb   15
     bsf	    REPU
     clrf    LATE    ;clears LATE   
-    clrf    LATH    ;clears LATH
-    clrf    PORTH   ;clears PORTH (just to be sure could probably remove)
     movlw   0x0F
     movwf   state, A	;defines 'state' to be 0x0F or 0000 1111
     clrf    col_val, A	;Next lines reset variables
     clrf    row_val, A
     clrf    val, A
     clrf    num, A
-    movlw   0x00
-    movwf   TRISH	    ;sets all pins to outputs (0000 0000) on PORTH   
     movff   state, TRISE    ;sets pins 0,1,2,3 to inputs on PORTE
     return
     
@@ -47,8 +43,7 @@ KEY_Setup:	    ;sets up Keypad
 KEY_Read_Message:	    
     movf  PORTE, W, A	    ;move value in PORTE to WR
     XORWF state, W, A	    ;Exclusive OR WR (PORTE) with State. If PORTE is default -> 0000 0000
-    movwf LATH		    ;move value in WR to PORTH
-    movff LATH, val	    ;move value in LATH to variable val
+    movwf val, A		    ;move value in WR to PORTH
     
 KEY_Find_CorR:
 test_None:		    ;test to see if anything is pressed
@@ -133,8 +128,7 @@ decode:
 test_continue:			;test to see if button is still being held
     movf    PORTE, W, A		;move value in PORTE to WR
     XORWF   state, W, A		;Exclusive OR WR (PORTE) with State (Should be same value)
-    movwf   LATH			;move value in WR to LATH
-    movff   LATH, val		;moves value of LATH to val
+    movwf   val, A			;move value in WR to val
     movlw   0x00		
     cpfseq  val, A		;is val = 0 (button off). If true skip line
     bra	    test_continue		;val is not 0, button is still on, repeat loop 
