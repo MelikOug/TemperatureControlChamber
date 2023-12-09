@@ -2,14 +2,18 @@
 
 global  LCD_Setup, LCD_Update, LCD_delay_ms
 global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array
-global	target
+global	target, lineargU,lineargH,lineargL, linearrayarg, lengtharg, addressarg
 extrn	temp_high, below_point
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
 Line1Array:	ds 0x20 ;reserve 32 bytes for message data for line 1
 Line2Array:	ds 0x20 ;reserve 32 bytes for message data for line 1
 SetArray:	ds 0x10
+linearrayarg:   ds 1
 
+
+
+    
 psect	data	
 Line1:
 	db	'T','a','r','g','e','t',':';,0x0a ;message (in PR), plus carriage return that moves cursor to the end
@@ -39,6 +43,12 @@ input_low:	ds 1
 target:		ds 1
  
 DDRAM_Address:  ds 1
+    
+lengtharg:	ds 1
+addressarg:	ds 1
+lineargU:	ds 2
+lineargH:	ds 2
+lineargL:	ds 2
     
 LCD_E	EQU 5	; LCD enable bit
 LCD_RS	EQU 4	; LCD register select bit
@@ -90,70 +100,65 @@ LCD_Setup:
 	
 	
 LCD_Frame:
-	lfsr	1, LenLine2
-;Current Line2    
-	lfsr	0, Line2Array		; Load FSR0 with address in bank 2	
-	movlw	low highword(Line2)	; address of data in PM
-	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(Line2)		; address of data in PM
-	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(Line2)		; address of data in PM
-	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	LenLine2		; bytes to read
-	movwf 	counter, A		; our counter register
+	;Set the line arguement
+	;Set the line array arguement
+	;Set the line length temporary variable (arguement)
+	;Set the start address arguement
+	;call write line
+	
+	;Target:
+	movlw	low highword(Line1)
+	movwf	lineargU, A
+	movlw	high(Line1)
+	movwf	lineargH, A
+	movlw	low(Line1)
+	movwf	lineargL, A
+	
+	movff	Line1Array, linearrayarg, A
+	movlw	LenLine1
+	movwf	LCD_counter, A
+	movwf	counter, A
+	movlw	10000000B
+	movwf	addressarg, A
+	call	LCD_Write_Line
+	
+	;Current: 
+	movlw	low highword(Line2)
+	movwf	lineargU, A
+	movlw	high(Line2)
+	movwf	lineargH, A
+	movlw	low(Line2)
+	movwf	lineargL, A
+	
+	movff	Line2Array, linearrayarg, A
+	movlw	LenLine2
+	movwf	LCD_counter, A
+	movwf	counter, A
+	movlw	11000000B
+	movwf	addressarg, A
+	call	LCD_Write_Line
+	
+	return
+	
+	
+	
+LCD_Write_Line:
+	lfsr	0, linearrayarg		; Load FSR0 with address in bank 2	
+	movff	lineargU, TBLPTRU, A	; load upper bits to TBLPTRU
+	movff	lineargH, TBLPTRH, A	; load high byte to TBLPTRH
+	movff	lineargL, TBLPTRL, A	; load low byte to TBLPTRL
 loop: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	movff	TABLAT, POSTINC0	; move data from TABLAT to (where FSR0 points), inc FSR0	
 	decfsz	counter, A		; count down to zero
 	bra	loop			; keep going until finished
-	lfsr	2, Line2Array		; Moves address of Line2Array in FSR2
-	movlw	LenLine2		; Moves address LenLine2 (11) into WR
-	movwf	LCD_counter, A
-	call	LCD_Write_Message
-
-;Current Line1    
-	lfsr	0, Line1Array		; Load FSR0 with address in RAM	
-	movlw	low highword(Line1)	; address of data in PM
-	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(Line1)		; address of data in PM
-	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(Line1)		; address of data in PM
-	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	LenLine1		; bytes to read
-	movwf 	counter, A		; our counter register
-loop2: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
-	movff	TABLAT, POSTINC0	; move data from TABLAT to (FSR0), inc FSR0	
-	decfsz	counter, A		; count down to zero
-	bra	loop2			; keep going until finished
-	lfsr	2, Line1Array
-	movlw	LenLine1		; Moves address of LenLine1 to WR 
-	movwf	LCD_counter, A
-	call	LCD_Write_Message
-	return
-	
-	
-LCD_Write_Message:	    
-	cpfseq	FSR1			;compares WR to address in FSR1 (11)
-	bra	LDC_Set_Line1
-	bra	LDC_Set_Line2
-	
-LDC_Set_Line1:
-	movlw	10000000B
+	lfsr	2, linearrayarg		; Moves address of Line2Array in FSR2
+LDC_Set_Line:
+	movf	addressarg, W, A
 	call	LCD_Send_Byte_I
-	movlw	10		; wait 40us
+	movlw	10			; wait 40us
 	call	LCD_delay_x4us
-	bra	LCD_Loop_message
-	
-LDC_Set_Line2:
-	movwf	LCD_counter, A
-	movlw	11000000B
-	call	LCD_Send_Byte_I
-	movlw	10		; wait 40us
-	call	LCD_delay_x4us
-	bra	LCD_Loop_message
-	
-	
 LCD_Loop_message:
-	movf    POSTINC2, W, A  ; Move value stored at FSR2 address to WR, Inc address
+	movf    POSTINC2, W, A		; Move value stored at FSR2 address to WR, Inc address
 	call    LCD_Send_Byte_D
 	decfsz  LCD_counter, A
 	bra	LCD_Loop_message
@@ -243,34 +248,20 @@ two_num:
 	movwf	target, A	    ;target is updated
 
 Write_Set:
-	lfsr	0, SetArray		; Load FSR0 with address in bank 2	
-	movlw	low highword(LineSet)	; address of data in PM
-	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(LineSet)		; address of data in PM
-	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(LineSet)		; address of data in PM
-	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	LenSet			; bytes to read
-	movwf 	counter, A		; our counter register
-loop3: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
-	movff	TABLAT, POSTINC0	; move data from TABLAT to (where FSR0 points), inc FSR0	
-	decfsz	counter, A		; count down to zero
-	bra	loop3			; keep going until finished
-	lfsr	2, SetArray		; Moves address of Line2Array in FSR2
-	movlw	LenSet			; Moves address LenLine2 (11) into WR
+	movlw	low highword(LineSet)
+	movwf	lineargU, A
+	movlw	high(LineSet)
+	movwf	lineargH, A
+	movlw	low(LineSet)
+	movwf	lineargL, A
+	
+	movff	SetArray, linearrayarg, A
+	movlw	LenSet
 	movwf	LCD_counter, A
-	
-	movlw	00001100B		; display on, cursor OFF, blinking OFF
-	call	LCD_Send_Byte_I
-	movlw	10		; wait 40us
-	call	LCD_delay_x4us
-	
-	movlw	10001011B
-	call	LCD_Send_Byte_I
-	movlw	10			; wait 40us
-	call	LCD_delay_x4us
-	bra	LCD_Loop_message
-	
+	movwf	counter, A
+	movlw	11001111B
+	movwf	addressarg, A
+	call	LCD_Write_Line
 	return
 	
 check_high:
