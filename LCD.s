@@ -232,8 +232,8 @@ LCD_Clear:
 LCD_Enter:
 	movlw	10001000B
 	cpfseq	DDRAM_Address, A    ;Has only one number been typed?
-	bra	two_num
-	movf	input_high, W, A
+	bra	two_num		    ;If not, treats first value as a tens digit
+	movf	input_high, W, A    ;If yes, treats first value as a ones unit
 	andlw	0x0F		    ;Keeps lower nibble (ascii to decimal)
 	movwf	target, A
 	bra	Write_Set
@@ -259,9 +259,14 @@ Write_Set:
 	movlw	LenSet
 	movwf	LCD_counter, A
 	movwf	counter, A
-	movlw	11001111B
+	movlw	10001011B
 	movwf	addressarg, A
 	call	LCD_Write_Line
+	
+	movlw	00001100B
+	call	LCD_Send_Byte_I
+	movlw	10
+	call	LCD_delay_x4us
 	return
 	
 check_high:
