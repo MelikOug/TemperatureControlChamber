@@ -160,21 +160,32 @@ I2C_Divide_By_256:
     ;16 bit number rotated right 8 times (divided by 64 and then by 4 =  divided by 2^8)
     ;	1010 0011 1100 1111 (41935)
     ;-> 0000 0000 1010 0011 | 1100 1111  (163 | 207)
-    ;sum_high becomes the integer quotient
-    ;suml_low becomes the remainder
+    ;sum_high (MS 8 bits) becomes the integer quotient (163)
+    ;suml_low (LS 8 bits) becomes the remainder (207)
     ;41935/256 = 163.80859375
     ;207 * 100,000,000/256 = 80859375 which is our number beyond decimal point
-    ;Will round to 1 dp
-    ;((207*10) + x)/256 = 8 (iterate through x until result is a whole number)
-    ;Fast way to do this is to increment 2070 until lower 8 bits are 0 -> LSB of high byte is incremented
-    ;New incremented high byte = 8
+    ;Will round to UP to 1 dp
+    ;((207*10) + x)/256 = y (iterate through x until result is a whole number y)
+    ;Fast way to do this is to increment remainder * 10 ^dp (in this case 2070) until lower 8 bits are 0
+    ;This is because we are dividing by 256 (rotating right 8 times) and want an integer
+    ;2070 = 00001000 | 00010110 we want the smallest number greater than 2070 so that
+    ;= 00001001 | 00000000
+    ;When this condition is met, the LSB of high byte is thus, incremented
+    ;New incremented high byte/256 = 9
     ;Therfore our average number is sum_high . ((HB of 2070)+1)
     
     movf    sum_low, W, A   ;Moves remainder into WR
     mullw   10		    ;Multiply by 10 and store in PRODH|PROD
     incf    PRODH, W, A	    ;increment the high byte of result by one
     movwf   below_point, A
+    movlw   10
+    cpfseq  below_point, A ;is below point = 10?
+    bra	    convert
+    movlw   0		    ;If it is, set it to 0
+    movwf   below_point, A
+    incf    sum_high, A	    ;increment value before decimal point
     
+convert:
     ;Convert sum_high decimal to equal hex
     movlw   0
     movwf   count, A
