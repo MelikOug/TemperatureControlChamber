@@ -118,7 +118,6 @@ Read_Loop:
     call    check_int
     return
    
-    
 load_buff:
     movwf   SSP1BUF
     call    check_AckR
@@ -172,7 +171,7 @@ I2C_Divide_By_256:
     ;= 00001001 | 00000000
     ;When this condition is met, the LSB of high byte is thus, incremented
     ;New incremented high byte/256 = 9
-    ;Therfore our average number is sum_high . ((HB of 2070)+1)
+    ;Therfore our average number is sum_high "." ((HB of 2070)+1)
     
     movf    sum_low, W, A   ;Moves remainder into WR
     mullw   10		    ;Multiply by 10 and store in PRODH|PROD
@@ -204,7 +203,7 @@ continue:
     movwf   temp_high, A
     swapf   count, W, A ;if is, swap count = 0x0y to 0xy0 and store it  WR
     addwf   temp_high, F, A ;add WR (0xy0) to sum_high (0x0z) and store result (0xyz) back in sum_high
-    ;sum_high has been converted from decimal value (ab) to 0xab
+    ;sum_high has been converted from decimal value (ab) to 0xab which is now stored in temp_high
     return
     
     
