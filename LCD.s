@@ -2,6 +2,7 @@
 
 global  LCD_Setup, LCD_Update, LCD_delay_ms
 global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array
+global	target
 extrn	temp_high, below_point
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
@@ -56,9 +57,7 @@ LCD_Setup:
 	movlw	10000111B
 	movwf	DDRAM_Address, A    ;Set DDRAM_Address to 1 after target:
 	movlw	0x20
-	movwf	target_high, A	    ;default target above dp
-	movlw	0x00
-	movwf	target_below, A	    ;default target below dp
+	movwf	target, A	    ;default target
 	
 	movlw   40
 	call	LCD_delay_ms	; wait 40ms for LCD to start up properly
@@ -168,7 +167,7 @@ Test_None:
 	movlw	0x00
 	cpfseq	msg, A		;is msg = 0x00 -> Update current if true
 	bra	Test_C
-	bra	Update_Current
+	call	Update_Current
 	return
 	    
 Test_C:
@@ -210,23 +209,40 @@ Test_F:
 LCD_Clear:
 	clrf	input_high, A
 	clrf	input_low, A
+	clrf	target, A
 	movlw	10000111B
 	movwf	DDRAM_Address, A ;Reset DDRAM_Address to after target:
 	
 	movlw   0x01    ;sends 01 as instruction (this clears LCD)
 	call    LCD_Send_Byte_I
 	movlw	2
-	call	LCD_delay_ms	; wait 2ms for LCD to start up properly		
+	call	LCD_delay_ms	; wait 2ms for LCD to start up properly	
+	movlw	00001111B	; display on, cursor on, blinking on
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
 	call	LCD_Frame
 	return  ;returns to main.s
     
 LCD_Enter:
+	movlw	10001000B
+	cpfseq	DDRAM_Address, A    ;Has only one number been typed?
+	bra	two_num
+	movf	input_high, W, A
+	andlw	0x0F		    ;Keeps lower nibble (ascii to decimal)
+	movwf	target, A
+	bra	Write_Set
+	
+two_num:
 	movf	input_high, W, A    ;moves the tens digit to wr
+	andlw	0x0F		    ;convert to decimal
 	mullw	10		    ;multiply by ten and store in PROD
 	movf	input_low, W, A	    ;moves the ones digit to wr
+	andlw	0x0F		    ;convert to decimal
 	addwf	PROD, W, A	    ;adds whatever was in the tens column  with the ones column to give number above dp
 	movwf	target, A	    ;target is updated
-	
+
+Write_Set:
 	lfsr	0, SetArray		; Load FSR0 with address in bank 2	
 	movlw	low highword(LineSet)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
@@ -243,7 +259,17 @@ loop3: 	tblrd*+				; one byte from PM to TABLAT, increment TBLPRT
 	lfsr	2, SetArray		; Moves address of Line2Array in FSR2
 	movlw	LenSet			; Moves address LenLine2 (11) into WR
 	movwf	LCD_counter, A
-	call	LCD_Write_Message
+	
+	movlw	00001100B		; display on, cursor OFF, blinking OFF
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	
+	movlw	10001011B
+	call	LCD_Send_Byte_I
+	movlw	10			; wait 40us
+	call	LCD_delay_x4us
+	bra	LCD_Loop_message
 	
 	return
 	
@@ -251,26 +277,20 @@ check_high:
 	movlw	0
 	cpfseq	input_high, A	    ;check if input_high already has a value
 	bra	check_low	    ;if it does, branch to check_low
-	movf	msg, W, A	    ;if it doesn't, move our ascii message to WR
-	andlw	0x0F
-	movwf	input_high, A	    ;moves lower nibble of message to input_low (convert ascii(0x3y) to hex(0x0y))
+	movff	msg, input_high, A	    ;if it doesn't, move our ascii message to WR
 	call	Update_Target
+	return
 	
 check_low:
 	movlw	0
 	cpfseq	input_low, A
 	return			    ;if input_low already has a value, just return. Only options are Clear or Enter.
-	movf	msg, W, A
-	andlw	0x0F
-	movwf	input_low, A ;moves lower nibble of message to input_low (convert ascii to number)
+	movff	msg, input_low, A
 	call	Update_Target
+	return
 	
 	
 Update_Target:
-	;movf	DDRAM_Address, W, A ;Address after target: (either 1st or 2nd)
-	;call	LCD_Send_Byte_I
-	;movlw	10		; wait 40us
-	;call	LCD_delay_x4us
 	movf	msg, W, A; Transmits byte stored in msg to data reg
 	call	LCD_Send_Byte_D
 	incf	DDRAM_Address, F, A
@@ -304,7 +324,6 @@ Update_Current:
 	call	LCD_Send_Byte_I
 	movlw	10		; wait 40us
 	call	LCD_delay_x4us
-	
 	return
     
     
