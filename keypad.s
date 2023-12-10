@@ -15,6 +15,7 @@ pos:	    ds 1
 msg:	    ds 1
 
 psect	data
+org 0xFB00
 map:		    ;stores map of keypad in program memory (psect data)
     db '1', '2', '3', 'F'
     db '4', '5', '6', 'E'
