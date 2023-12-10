@@ -2,7 +2,8 @@
 
 global  LCD_Setup, LCD_Update, LCD_delay_ms
 global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array
-global	target, lineargU,lineargH,lineargL, linearrayarg, lengtharg, addressarg
+global	target, lineargU,lineargH,lineargL, linearrayarg, lengtharg, addressarg, DDRAM_Address
+global	LCD_Send_Byte_I, LCD_Send_Byte_D,LCD_delay_x4us
 extrn	temp_high, below_point
     
 psect	udata_bank2	;reserve data in RAM bank 2 (doesnt affect other vars)
@@ -214,7 +215,6 @@ Test_F:
 LCD_Clear:
 	clrf	input_high, A
 	clrf	input_low, A
-	clrf	target, A
 	movlw	10000111B
 	movwf	DDRAM_Address, A ;Reset DDRAM_Address to after target:
 	
@@ -230,6 +230,7 @@ LCD_Clear:
 	return  ;returns to main.s
     
 LCD_Enter:
+one_num:
 	movlw	10001000B
 	cpfseq	DDRAM_Address, A    ;Has only one number been typed?
 	bra	two_num		    ;If not, treats first value as a tens digit
@@ -259,7 +260,7 @@ Write_Set:
 	movlw	LenSet
 	movwf	LCD_counter, A
 	movwf	counter, A
-	movlw	10001011B
+	movlw	10001010B
 	movwf	addressarg, A
 	call	LCD_Write_Line
 	
