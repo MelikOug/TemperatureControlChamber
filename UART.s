@@ -36,7 +36,6 @@ UART_Loop_message:
     
     movlw   'e'		    ;end byte
     call    UART_Transmit_Byte
-    ;goto    $
     return
     
 
