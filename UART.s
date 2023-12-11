@@ -25,16 +25,12 @@ UART_Transmit_Pixels:	    ; Message stored at FSR2, length is 128
     movwf   UART_counter, A
     lfsr    0, Pixel_Data
     
-    movlw   's'		    ;start byte
-    call    UART_Transmit_Byte
-    
 UART_Loop_message:
     movf    POSTINC0, W, A  ;Moves data stored at address in FSR0 to WR
     call    UART_Transmit_Byte
     decfsz  UART_counter, A
     bra	    UART_Loop_message
-    
-    movlw   'e'		    ;end byte
+    movlw   0xFF	    ;Send End Byte
     call    UART_Transmit_Byte
     return
     
