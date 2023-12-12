@@ -3,9 +3,9 @@
 ;Holds all the code required for communication with sensor
 
 global I2C_Setup, I2C_Set_Sensor_On, I2C_Read_Pixels, I2C_Average_Pixels
-global Pixel_Data, sum_low, sum_high, below_point, count, temp_high
+global Pixel_Data, sum_high, below_point, temp_high
     
-psect	udata_acs	;reserve data in access RAM 
+psect	udata_acs	    ;Reserve data in access RAM for variables that will be used
 count:	     ds 1
 sum_low:     ds 1
 sum_high:    ds 1
@@ -13,18 +13,15 @@ temp_high:   ds 1
 below_point: ds 1
 
     
-psect	udata_bank3	;reserve data in RAM bank 3 (doesnt affect other vars)
-Pixel_Data: ds 0x80 ;reserve 128 bytes for temperature data from pixels
+psect	udata_bank3	    ;reserve data in RAM bank 3 (doesn't overwrite other variables)
+Pixel_Data: ds 0x80	    ;reserve 128 bytes for temperature data from pixels
     
 psect	I2C_code,class=CODE
     
-I2C_Setup:    
-    clrf    SSP1CON2
-    
+I2C_Setup:        
     bcf	    RCON, 7	    ;(Clear IPEN bit) Disable priority levels on all interrupts (p162)
     bcf	    INTCON, 7	    ;Clear GIE (Disables all interrupts) (p143)
     bcf	    INTCON, 6	    ;Clear PEIE (Disable all peripheral interrupts) (p143)
-    
     bsf	    PIE1, 3	    ;Sets SSP1IE Bit (Master Scynchronous Serial Port Interrupt Enable bit (p152) 
     bsf	    IPR1, 3	    ;Master Synchronous Serial Port Interrupt Priority bit = High priorty (p157)
     
@@ -38,22 +35,19 @@ I2C_Setup:
     movwf   SSP1ADD	
     ;When the MSSP is configured in Master mode, the lower seven
     ;bits of SSPxADD act as the Baud Rate Generator reload value (p291)
-    
     movlw   00101000B 
     movwf   SSP1CON1	    ;config for master mode (p293) 
     ;SSPEN <5> = 1 
     ;SSPM <3:0> = 1000 = I2C Master mode: clock = FOSC/(4 * (SSPxADD + 1))
-    
     return
 
 I2C_Set_Sensor_On: 
     ;Grid-EYE_AMG88X_I2C communication (p2)
     ;21.4.6.1 I2C Master Mode Operation (p312)
-    bcf	    PIR1, 3
+    bcf	    PIR1, 3	    ;Clears the SSP1IF which is due to be set upon completion of start condition
     bsf	    SSP1CON2, 0	    ;Generate start condition (p294) 
     ;SSP1IF is set (bsf PIR1, 3 ) when done (p312)
     call    check_int	    ;check to see if done 
-    
     
     movlw   11010000B	    ;MS7Bits = slave address, LSB = 0 = Write
     call    load_buff	    ;Send to into buffer which sends out to sensor
@@ -62,25 +56,23 @@ I2C_Set_Sensor_On:
     movlw   0x00	    ;Power control register address (p2)
     call    load_buff
     
-    movlw   0x00	    ;Set sensor to normal mode instruction (p2)
+    movlw   0x00	    ;Set sensor to normal operating mode instruction (p2)
     call    load_buff	    
     
     bsf	    SSP1CON2, 2	    ;Generate stop condition
-    call    check_int	    ;Check if SSP1IF is set		
-    	    
-    ;movlw   00010001B
-    ;movwf   LATE
+    call    check_int	    		
+    	 
     return
     
 I2C_Read_Pixels: 
     ;Grid-EYE_AMG88X_I2C communication (p20)
     ;(p317)
-    movlw   128	    ;Number of Pixels to read * 2 (Each pixel sends low and high byte)
+    movlw   128		    ;(Number of Pixels to read) * 2 (Each pixel sends low (8bit) and high byte (4bit))
     movwf   count, A	    ;Set this value equal to a count variable
     lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
     
     bsf	    SSP1CON2, 0	    ;Generate start (set SEN bit) condition
-    call    check_int	    ;Check if SSP1IF is set
+    call    check_int	   
     
     movlw   11010000B	    ;MS7Bits = slave address, LSB = 0 = Write
     call    load_buff
@@ -99,18 +91,19 @@ Read_Loop:
     call    check_int
     movff   SSP1BUF, POSTINC0 ;Moves received data to wherever FSR0 points to in bank3
 			    ;Then increments the address in FSR0 ready for the next pixel data
-    bcf	    SSP1CON2, 5     ;Clears ACKDT Bit (Prepares and acknowledge)
+    bcf	    SSP1CON2, 5     ;CLEARS ACKDT Bit (Prepares and acknowledge)
     bsf	    SSP1CON2, 4	    ;Sets ACKEN bit to transmit ACKDT to sensor
     call    check_int   
 		    
     decfsz  count, A	    ;Decrement count variable by 1. Skip if 0.
     bra	    Read_Loop	    ;Repeat until all data is read
+    
 			    ;Read last data byte
     bsf	    SSP1CON2, 3	    ;Reception mode (RCEN) enabled (p317)
     call    check_int
     movff   SSP1BUF, POSTINC0 ;Moves received data to wherever FSR0 points to in bank3
     
-    bsf	    SSP1CON2, 5     ;Sets ACKDT Bit (NACK) (NACK only for final)
+    bsf	    SSP1CON2, 5     ;SETS ACKDT Bit (NACK)-(NACK only for final)
     bsf	    SSP1CON2, 4	    ;Sets ACKEN bit to transmit ACKDT to slave
     call    check_int	    
     
@@ -119,15 +112,15 @@ Read_Loop:
     return
    
 load_buff:
-    movwf   SSP1BUF
-    call    check_AckR
+    movwf   SSP1BUF	    ;Move WR to output buffer which be sent to sensor
+    call    check_AckR	   
     call    check_int
     return
     
 check_int:
-    btfss   PIR1, 3	    ;is start condition finished setting up
+    btfss   PIR1, 3	    ;is SSP1IF set? (Previous action finished setting up?)
     bra	    check_int	    ;continue polling if not
-    bcf	    PIR1, 3	    ;must be cleared by software (manually) 
+    bcf	    PIR1, 3	    ;Clear SSP1IF and proceed
     return
     
 check_AckR:
@@ -136,42 +129,49 @@ check_AckR:
     return
   
     
-I2C_Average_Pixels:
+    
+    
+I2C_Average_Pixels:	    ;The Subroutine calculates the average temperature across al pixels
     lfsr    0, Pixel_Data   ;loads FSR0 with the address of Pixel_Data in bank3
-    movlw   64		    ;Number of pixels to read
-    movwf   count, A
-    clrf    sum_low, A
+    movlw   64		    
+    movwf   count, A	    ;Count variable = number of pixels to read
+    
+    ;Adding 12bit numbers requires two 8bit file registers to store result
+    clrf    sum_low, A	    
     clrf    sum_high, A	    ;Will end up being value before dp
     clrf    below_point, A  ;Will end up being value after dp
 I2C_Sum_Pixels:
     ;Need to add the contents of all the 64 pixels (4bitH|8bitL) 
-    movf    POSTINC0, W
-    addwf   sum_low, F, A
+    movf    POSTINC0, W	    ;Moves the value stored in address in FSR0 to WR. Inc FSR0
+    addwf   sum_low, F, A   ;Adds WR to sum_low file register
     
     movf    POSTINC0, W
-    addwfc  sum_high, F, A  ;add through carry
+    addwfc  sum_high, F, A  ;Add through carry generated by previous addition
     
-    decfsz  count, A
-    bra	    I2C_Sum_Pixels
-    bra     I2C_Divide_By_256
+    decfsz  count, A	    ;Decrement count by 1, skip if 0
+    bra	    I2C_Sum_Pixels  ;Continue process with next pixel
+    bra     I2C_Divide_By_256; Proceed to division stage
     
 I2C_Divide_By_256:
-    ;16 bit number rotated right 8 times (divided by 64 and then by 4 =  divided by 2^8)
+    ;The temperature sends the data where the actual temperature in Celsius
+    ;is the decimal value divided by 4
+    ;E.g: 0000 0000 0001 = 0.25C, 0000 1000 0000 = 32C
+    ;16 bit number must be rotated right 8 times (divided by 64 and then by 4 =  divided by 2^8)
     ;	1010 0011 1100 1111 (41935)
     ;-> 0000 0000 1010 0011 | 1100 1111  (163 | 207)
     ;sum_high (MS 8 bits) becomes the integer quotient (163)
     ;suml_low (LS 8 bits) becomes the remainder (207)
     ;41935/256 = 163.80859375
-    ;207 * 100,000,000/256 = 80859375 which is our number beyond decimal point
+    ;207*(10^8)/256 = 80859375 which is our number beyond decimal point
     ;Will round to UP to 1 dp
-    ;((207*10) + x)/256 = y (iterate through x until result is a whole number y)
+    ;((207*10^1) + x)/256 = y (iterate through x until result is a whole number y)
     ;Fast way to do this is to increment remainder * 10 ^dp (in this case 2070) until lower 8 bits are 0
     ;This is because we are dividing by 256 (rotating right 8 times) and want an integer
-    ;2070 = 00001000 | 00010110 we want the smallest number greater than 2070 so that
-    ;= 00001001 | 00000000
+    ;2070 = 00001000 | 00010110 we want the smallest number greater than 2070 that satisfies this
+    ;so that = 00001001 | 00000000
     ;When this condition is met, the LSB of high byte is thus, incremented
     ;New incremented high byte/256 = 9
-    ;Therfore our average number is sum_high "." ((HB of 2070)+1)
+    ;Therfore our average number is sum_high "." [(HB of (sum_low*10))+1]
     
     movf    sum_low, W, A   ;Moves remainder into WR
     mullw   10		    ;Multiply by 10 and store in PRODH|PROD
