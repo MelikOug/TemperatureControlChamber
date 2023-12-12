@@ -137,7 +137,7 @@ I2C_Average_Pixels:	    ;The Subroutine calculates the average temperature acros
     movwf   count, A	    ;Count variable = number of pixels to read
     
     ;Adding 12bit numbers requires two 8bit file registers to store result
-    clrf    sum_low, A	    
+    clrf    sum_low, A	    ;Will end up being the remainder
     clrf    sum_high, A	    ;Will end up being value before dp
     clrf    below_point, A  ;Will end up being value after dp
 I2C_Sum_Pixels:
@@ -164,46 +164,54 @@ I2C_Divide_By_256:
     ;41935/256 = 163.80859375
     ;207*(10^8)/256 = 80859375 which is our number beyond decimal point
     ;Will round to UP to 1 dp
-    ;((207*10^1) + x)/256 = y (iterate through x until result is a whole number y)
-    ;Fast way to do this is to increment remainder * 10 ^dp (in this case 2070) until lower 8 bits are 0
+    ;((207*10^1) + x)/256 = y = 9 (iterate through x until result is a whole number y)
+    ;Fast way to do this is to increment numerator (in this case 2070) until lower 8 bits are 0
     ;This is because we are dividing by 256 (rotating right 8 times) and want an integer
-    ;2070 = 00001000 | 00010110 we want the smallest number greater than 2070 that satisfies this
-    ;so that = 00001001 | 00000000
-    ;When this condition is met, the LSB of high byte is thus, incremented
+    ;2070 = 0000 1000 0001 0110, we want the smallest number greater than 2070 that satisfies this condition
+    ;This number is therefore 0000 1001 0000 0000
+    ;When this condition is met, the LSB of the high byte is thus, incremented
     ;New incremented high byte/256 = 9
-    ;Therfore our average number is sum_high "." [(HB of (sum_low*10))+1]
+    ;Therfore our average number is: [sum_high], ".", [(HB of (sum_low*10))+1]
     
     movf    sum_low, W, A   ;Moves remainder into WR
-    mullw   10		    ;Multiply by 10 and store in PRODH|PROD
-    incf    PRODH, W, A	    ;increment the high byte of result by one
-    movwf   below_point, A
+    mullw   10		    ;Multiply by 10 and store in {PRODH(HB) PROD(LB)}
+    incf    PRODH, W, A	    ;Increment the high byte of result by one
+    movwf   below_point, A  ;Move WR to below_point variable
+    
+    ;Checks to see if rounding up results in 10 below dp
     movlw   10
-    cpfseq  below_point, A ;is below point = 10?
-    bra	    convert
-    movlw   0		    ;If it is, set it to 0
-    movwf   below_point, A
+    cpfseq  below_point, A  ;Is below point = 10? Skip if True
+    bra	    convert	    ;Continue to next section
+    movlw   0		    
+    movwf   below_point, A  ;If it is, set it to 0
     incf    sum_high, A	    ;increment value before decimal point
+			    ;E.g: 20.10 -> 21.0 
     
 convert:
-    ;Convert sum_high decimal to equal hex
+    ;This section converts our 2 digit decimal (ab) to 0xab
+    ;so that it can be easily manipulated to output to LCD
     movlw   0
-    movwf   count, A
-    movff   sum_high, temp_high, A
+    movwf   count, A	    
+    movff   sum_high, temp_high, A  ;temp_high will store this 0xab version
+    
+    ;This section sees how many tens can be subtracted from temp_high until negative result
 ten_loop:
-    movlw   10		;move 10 to WR
-    subwf   temp_high, F, A ;Subtract 10 from sum_high and store back in sum_high
-    btfsc   STATUS, 4	;check if result is negative (sign flag)
-    bra	    continue
-    incf    count, A
-    bra	    ten_loop    ;if not, repeat
+    movlw   10	
+    subwf   temp_high, F, A ;Subtract 10 from temp_high and store back in temp_high
+    btfsc   STATUS, 4	    ;Check if result is negative (sign flag), skip if positive
+    bra	    continue	    
+    incf    count, A	    ;Counts how many times 10 is subtracted
+    bra	    ten_loop	    ;Repeat process until result is negative
     
 continue:
-    movf    temp_high, W, A
-    addlw   10
-    movwf   temp_high, A
-    swapf   count, W, A ;if is, swap count = 0x0y to 0xy0 and store it  WR
-    addwf   temp_high, F, A ;add WR (0xy0) to sum_high (0x0z) and store result (0xyz) back in sum_high
-    ;sum_high has been converted from decimal value (ab) to 0xab which is now stored in temp_high
+    movf    temp_high, W, A ;Move temp_high (which is now negative) to WR
+    addlw   10		    ;Adds 10 to WR to make it (0b) in decimal = 0x0b
+    movwf   temp_high, A    ;Move WR back into temp_high
+    swapf   count, W, A	    ;Swap count = y = 0x0y to 0xy0 and store it  WR
+			    ;y = the tens digit in decimal form (a in (ab))
+    addwf   temp_high, F, A ;add WR (0xy0) to temp_high (0x0b) and store result (0xyb) back in temp_high
+    ;sum_high has been converted from decimal value (ab) to 0xab 
+    ;which is now stored in temp_high and ready to be used by LCD.S
     return
     
     
