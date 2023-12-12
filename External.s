@@ -23,7 +23,7 @@ check_thresh:
     bra	    off
     
 cool: 
-    bcf	    LATJ, 0	;Direction  (0)
+    bsf	    LATJ, 0	;Direction  (0)
     bcf	    LATJ, 1	;Brake	    (0)
     bsf	    LATJ, 2	;Duty Cycle (1)
     movlw   10001111B
@@ -39,7 +39,7 @@ cool:
     return
     
 heat: 
-    bsf	    LATJ, 0	;Direction  (1)
+    bcf	    LATJ, 0	;Direction  (1)
     bcf	    LATJ, 1	;Brake	    (0)
     bsf	    LATJ, 2	;Duty Cycle (1)
     movlw   10001111B
