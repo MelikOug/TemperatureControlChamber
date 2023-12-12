@@ -1,7 +1,7 @@
 #include <xc.inc>
     
 global  KEY_Setup, KEY_Read_Message
-global  state, val, col_val, row_val, num, Bindex, pos, msg
+;global  state, val, col_val, row_val, num, Bindex, pos, msg
 extrn	LCD_delay_ms
 
 psect	udata_acs   ;reserve data space in access ram
@@ -21,7 +21,7 @@ map:		    ;stores map of keypad in program memory (psect data)
     db '4', '5', '6', 'E'
     db '7', '8', '9', 'D'
     db  'A', '0','B', 'C'
-    align 2	    ;program memory must be shifter to even final byte address numbers (i.e. 0,2,4...)
+    align 2	    ;program memory must be shifted to even final byte address numbers (i.e. 0,2,4...)
     ;can check address of this map by opening file memory window, 
     ;selcting format Hex, filter ASCII and typing in a relevant letter)
     
@@ -30,7 +30,7 @@ psect	key_code,class=CODE
 KEY_Setup:	    ;sets up Keypad
     movlb   15
     bsf	    REPU
-    clrf    LATE    ;clears LATE   
+    clrf    LATE	;clears LATE   
     movlw   0x0F
     movwf   state, A	;defines 'state' to be 0x0F or 0000 1111
     clrf    col_val, A	;Next lines reset variables
@@ -85,7 +85,6 @@ switch_to_row:
     movff   state, TRISE    ;sets input pins to 4,5,6,7 ready for row testing stage
     movlw   10
     call    LCD_delay_ms	    ;delay 10ms so that TRISE pins have time to settle
-    
     bra	    KEY_Read_Message	;read message from keypad again
   
 decode:
@@ -100,11 +99,12 @@ decode:
     
     ;convert num to corresponding character on keypad map
     ;address in program memory is 21 bits long split into 5 (low highword), 8 (high) and 8 (low)
+    
     movlw   low highword(map)	;moves highest 5bits of address of map in program memory to WR
     movwf   TBLPTRU, A		;moves these 5bits to tablepointer upper file reg
     movlw   high (map)		;moves middle 8bits of address of map in program memory to WR
-    movwf   TBLPTRH, A		;moves middle 8bits of address of map in program memory to WR
-    ;These parts of the address remain constant for all values in keypad map
+    movwf   TBLPTRH, A		;moves these 8bits to tablepointer higher file register
+    ;These parts of the address remain constant for all values in keypad map because of org 0xFB00
     ;Only the lower 8 bits differ for each value
     
     movf    num, W, A		;moves out num (map coordinate) to WR
