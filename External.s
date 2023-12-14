@@ -1,7 +1,9 @@
 #include <xc.inc>
     
 global  External_Setup, External_Mode
-extrn	target, sum_high, LCD_Send_Byte_I, LCD_Send_Byte_D, LCD_delay_x4us, DDRAM_Address
+    
+extrn	target, sum_high, DDRAM_Address
+extrn	LCD_Send_Byte_I, LCD_Send_Byte_D, LCD_delay_x4us
 psect	external_code,class=CODE
 External_Setup:
     clrf    LATJ
