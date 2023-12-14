@@ -228,7 +228,8 @@ LCD_Clear:
 	call	LCD_delay_x4us
 	call	LCD_Frame
 	return  ;returns to main.s
-    
+	
+	
 LCD_Enter:
 one_num:
 	movlw	10001000B
