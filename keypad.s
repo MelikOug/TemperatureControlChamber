@@ -1,7 +1,7 @@
 #include <xc.inc>
     
 global  KEY_Setup, KEY_Read_Message
-;global  state, val, col_val, row_val, num, Bindex, pos, msg
+global  msg
 extrn	LCD_delay_ms
 
 psect	udata_acs   ;reserve data space in access ram
