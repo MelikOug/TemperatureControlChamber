@@ -153,9 +153,9 @@ I2C_Sum_Pixels:
     bra     I2C_Divide_By_256; Proceed to division stage
     
 I2C_Divide_By_256:
-    ;The temperature sends the data where the actual temperature in Celsius
+    ;The temperature sensor sends the data where the actual temperature, in Celsius,
     ;is the decimal value divided by 4
-    ;E.g: 0000 0000 0001 = 0.25C, 0000 1000 0000 = 32C
+    ;E.g: 0000 0000 0001 = 0.25 degrees C, 0000 1000 0000 = 32 degrees C
     ;16 bit number must be rotated right 8 times (divided by 64 and then by 4 =  divided by 2^8)
     ;	1010 0011 1100 1111 (41935)
     ;-> 0000 0000 1010 0011 | 1100 1111  (163 | 207)
@@ -205,12 +205,12 @@ ten_loop:
     
 continue:
     movf    temp_high, W, A ;Move temp_high (which is now negative) to WR
-    addlw   10		    ;Adds 10 to WR to make it (0b) in decimal = 0x0b
+    addlw   10		    ;Adds 10 to WR to make it (0z) in decimal = 0x0z
     movwf   temp_high, A    ;Move WR back into temp_high
     swapf   count, W, A	    ;Swap count = y = 0x0y to 0xy0 and store it  WR
 			    ;y = the tens digit in decimal form (a in (ab))
-    addwf   temp_high, F, A ;add WR (0xy0) to temp_high (0x0b) and store result (0xyb) back in temp_high
-    ;sum_high has been converted from decimal value (ab) to 0xab 
+    addwf   temp_high, F, A ;add WR (0xy0) to temp_high (0x0z) and store result (0xyz) back in temp_high
+    ;sum_high has been converted from decimal value (yz) to 0xyz 
     ;which is now stored in temp_high and ready to be used by LCD.S
     return
     
