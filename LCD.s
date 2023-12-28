@@ -1,5 +1,7 @@
 #include <xc.inc>
 
+;Holds all the code required to control the output of the LCD based on sensor readings and user inputs
+    
 global  LCD_Setup, LCD_Update, LCD_delay_ms
 global  LCD_tmp, msg, LCD_counter, LenLine1, LenLine2, Line1, Line2, Line1Array, Line2Array
 global	target, lineargU,lineargH,lineargL, linearrayarg, lengtharg, addressarg, DDRAM_Address
