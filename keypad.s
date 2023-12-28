@@ -1,5 +1,7 @@
 #include <xc.inc>
     
+;Holds the code necessary to convert a user input on a keypad to a number stored in memory    
+
 global  KEY_Setup, KEY_Read_Message
 global  msg
 extrn	LCD_delay_ms
