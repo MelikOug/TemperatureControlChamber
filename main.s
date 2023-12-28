@@ -1,5 +1,7 @@
 #include <xc.inc>
     
+;This holds the sequence of subroutine executions in external files for the program to run 
+    
 ;External subroutines called by the main.s file
 extrn	KEY_Setup, KEY_Read_Message  
 extrn	LCD_Setup, LCD_Update
