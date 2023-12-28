@@ -1,5 +1,7 @@
 #include <xc.inc>
-    
+  
+;Holds the code that controls the heating part of the system    
+
 global  External_Setup, External_Mode
     
 extrn	target, sum_high, DDRAM_Address
