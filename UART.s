@@ -1,5 +1,7 @@
 #include <xc.inc>
     
+;Holds the code required to transmit data via UART protocol
+    
 global  UART_Setup, UART_Transmit_Pixels, Pixel_Data, Pixel_Counter
 
 ;reserve data space in access ram for variables
