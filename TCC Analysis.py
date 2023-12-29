@@ -23,10 +23,6 @@ hours, minutes, seconds = np.array(
 total_seconds2 = (hours * 3600) + (minutes*60) + seconds
 total_seconds2_shifted = total_seconds2 - total_seconds[0]
 
-print(total_seconds_shifted)
-print(total_seconds2_shifted)
-
-print(PTemp)
 
 fig = plt.figure(dpi=500)
 ax = fig.add_subplot()
