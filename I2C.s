@@ -205,12 +205,12 @@ ten_loop:
     
 continue:
     movf    temp_high, W, A ;Move temp_high (which is now negative) to WR
-    addlw   10		    ;Adds 10 to WR to make it (0z) in decimal = 0x0z
+    addlw   10		    ;Adds 10 to WR to make it (0b) in decimal = 0x0b
     movwf   temp_high, A    ;Move WR back into temp_high
-    swapf   count, W, A	    ;Swap count = y = 0x0y to 0xy0 and store it  WR
+    swapf   count, W, A	    ;Swap count = a = 0x0a to 0xa0 and store it  WR
 			    ;y = the tens digit in decimal form (a in (ab))
-    addwf   temp_high, F, A ;add WR (0xy0) to temp_high (0x0z) and store result (0xyz) back in temp_high
-    ;sum_high has been converted from decimal value (yz) to 0xyz 
+    addwf   temp_high, F, A ;add WR (0xa0) to temp_high (0x0b) and store result (0xab) back in temp_high
+    ;sum_high has been converted from decimal value (ab) to 0xab 
     ;which is now stored in temp_high and ready to be used by LCD.S
     return
     
