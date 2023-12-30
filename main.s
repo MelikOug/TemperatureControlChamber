@@ -20,8 +20,8 @@ setup:	bcf	CFGS			;Point to Flash program memory
 	call	External_Setup		;Configures PORTJ that will control the Heating Module 
 	call	I2C_Setup		;Configures the I2C protocol that will be used to read data from the temperature sensor
 	call	I2C_Set_Sensor_On	;Turns on the temperature sensor
+ 	call	UART_Setup		;Configures the UART protocol which will be used to send sensor data to PC
 	call	LCD_Setup		;Configures the LCD Screen
-	call	UART_Setup		;Configures the UART protocol which will be used to send sensor data to PC
 	call	KEY_Setup		;Configures PORTE and variables required to read data from keypad
 	goto	start
 
