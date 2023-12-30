@@ -38,7 +38,3 @@ ax.plot(total_seconds_shifted, maxT, ls='-',
 ax.plot(total_seconds2_shifted, PTemp, label='Peltier Temperature')
 #ax.plot(seconds, std, ls = '-', marker = '.',label = "$\sigma$")
 ax.legend()
-        marker='.', label='Maximum Temperature')
-ax.plot(total_seconds2_shifted, PTemp, label='Peltier Temperature')
-#ax.plot(seconds, std, ls = '-', marker = '.',label = "$\sigma$")
-ax.legend()
