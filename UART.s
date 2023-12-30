@@ -11,8 +11,8 @@ Pixel_Counter:ds    1
 
 psect	uart_code,class=CODE
 UART_Setup:
-    bsf	    SPEN		    ;enable
-    bcf	    SYNC		    ;synchronous
+    bsf	    SPEN		    ;set serial port enable bit
+    bcf	    SYNC		    ;asynchronous mode
     bcf	    BRGH		    ;slow speed
     bsf	    TXEN		    ;enable transmit
     bcf	    BRG16		    ;8-bit generator only
