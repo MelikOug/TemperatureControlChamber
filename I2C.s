@@ -86,9 +86,10 @@ I2C_Read_Pixels:
     movlw   11010001B	    ;MS7Bits = slave address, LSB = 1 = Read
     call    load_buff
     
+Read_Loop:
     bsf	    SSP1CON2, 3	    ;Reception mode (RCEN) enabled (p317)
     call    check_int
-Read_Loop:
+    
     movff   SSP1BUF, POSTINC0 ;Moves received data to wherever FSR0 points to in bank3
 			    ;Then increments the address in FSR0 ready for the next pixel data
     bcf	    SSP1CON2, 5     ;CLEARS ACKDT Bit (Prepares and acknowledge)
