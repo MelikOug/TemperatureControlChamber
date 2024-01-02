@@ -26,11 +26,11 @@ setup:	bcf	CFGS			;Point to Flash program memory
 	goto	start
 
 start:
-	call	KEY_Read_Message	;Reads message inputted on keypad
 	call	I2C_Read_Pixels		;Reads data from each pixel on temperature sensor to microcontroller via I2C
 	call	UART_Transmit_Pixels	;Sends this data to PC
 	call	I2C_Average_Pixels	;Calculates the mean temperature across all pixels
 	call	LCD_Update		;Updates LCD screen with necessary information
+ 	call	KEY_Read_Message	;Reads message inputted on keypad
 	call	External_Mode		;Sets the mode of the heating module depending parameters
 	bra	start
 	
