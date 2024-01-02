@@ -66,7 +66,7 @@ LCD_Setup:
 	;List of instructions sent to LCD for required function
 	clrf    LATB, A		    
 	movlw   11000000B	    
-	movwf	TRISB, A	    ;RB0:5 and below all outputs
+	movwf	TRISB, A	    ;RB0:5 set to outputs
 	clrf	input_high, A	    ;Clear Keypad input variables
 	clrf	input_low, A
 	movlw	15
