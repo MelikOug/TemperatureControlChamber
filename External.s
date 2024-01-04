@@ -30,7 +30,7 @@ check_heat:
     bra	    heat
     
 cool: 
-    bsf	    LATJ, 0		;Direction  (0)
+    bsf	    LATJ, 0		;Direction  (1)
     bcf	    LATJ, 1		;Brake	(0)
     movlw   10001111B
     call    LCD_Send_Byte_I	;Sets DDRAM address to bottom right square
@@ -45,7 +45,7 @@ cool:
     return
     
 heat: 
-    bcf	    LATJ, 0		;Direction  (1)
+    bcf	    LATJ, 0		;Direction  (0)
     bcf	    LATJ, 1		;Brake	(0)
     movlw   10001111B
     call    LCD_Send_Byte_I	;Sets DDRAM address to bottom right square
@@ -60,7 +60,6 @@ heat:
     return
     
 off:
-    bcf	    LATJ, 0		;Direction  (0)
     bsf	    LATJ, 1		;Brake	(1)
     movlw   10001111B
     call    LCD_Send_Byte_I	;Sets DDRAM address to bottom right square
