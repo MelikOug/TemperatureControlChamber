@@ -12,7 +12,6 @@ External_Setup:
     clrf    LATJ
     movlw   0x00
     movwf   TRISJ		;Set all pins to output
-    bsf	    LATJ, 2		;Duty Cycle (1)
     
 External_Mode:
     ;Compare current temperature (sum_high value) (above the decimal point) with target
